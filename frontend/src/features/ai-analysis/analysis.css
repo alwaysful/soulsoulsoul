@@ -29,3 +29,28 @@
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.analysis-device {
+  max-width: 640px;
+  margin-top: 16px;
+}
+
+.coach-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1000;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 20px;
+  transform: translate(-50%, -50%);
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  text-align: center;
+  font-weight: 600;
+}
+
+.coach-toast p {
+  margin: 0 0 8px;
+}

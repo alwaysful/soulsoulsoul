@@ -1,0 +1,574 @@
+diff --git a/BE/app.module.ts b/BE/app.module.ts
+index 42348a3..db31338 100644
+--- a/BE/app.module.ts
++++ b/BE/app.module.ts
+@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
+ import { CategoryModule } from './category/category.module';
+ import { ConfigModule } from '@nestjs/config';
+ import { validateEnv } from './config/env.validation';
++import { NotificationModule } from './notification/notification.module';
+ 
+ @Module({
+   imports: [
+@@ -18,6 +19,7 @@ import { validateEnv } from './config/env.validation';
+     PostModule,
+     CategoryModule,
+     AuthModule,
++    NotificationModule,
+   ],
+   controllers: [AppController],
+ })
+diff --git a/BE/notification/dto/phone-alert.dto.ts b/BE/notification/dto/phone-alert.dto.ts
+new file mode 100644
+index 0000000..7a4fbda
+--- /dev/null
++++ b/BE/notification/dto/phone-alert.dto.ts
+@@ -0,0 +1,10 @@
++import { ApiProperty } from '@nestjs/swagger';
++import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
++
++export class PhoneAlertDto {
++  @ApiProperty({ description: '푸시를 받을 스마트폰 기기 ID', example: 'device-abc-123' })
++  @IsString()
++  @IsNotEmpty()
++  @MaxLength(128)
++  deviceId!: string;
++}
+diff --git a/BE/notification/notification.controller.ts b/BE/notification/notification.controller.ts
+new file mode 100644
+index 0000000..bd89503
+--- /dev/null
++++ b/BE/notification/notification.controller.ts
+@@ -0,0 +1,37 @@
++import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
++import {
++  ApiBearerAuth,
++  ApiOkResponse,
++  ApiOperation,
++  ApiServiceUnavailableResponse,
++  ApiTags,
++  ApiTooManyRequestsResponse,
++  ApiUnauthorizedResponse,
++} from '@nestjs/swagger';
++import { JwtGuard } from '../auth/jwt.guard';
++import { ErrorResponseDto } from '../common/dto/error-response.dto';
++import { PhoneAlertDto } from './dto/phone-alert.dto';
++import { PhoneAlertService } from './phone-alert.service';
++
++@ApiTags('notification')
++@ApiBearerAuth()
++@UseGuards(JwtGuard)
++@Controller('notification')
++export class NotificationController {
++  constructor(private readonly phoneAlert: PhoneAlertService) {}
++
++  @Post('phone-alert')
++  @HttpCode(200)
++  @ApiOperation({ summary: '스마트폰 사용 감지 푸시 전송' })
++  @ApiOkResponse({ schema: { example: { sent: true } } })
++  @ApiUnauthorizedResponse({ type: ErrorResponseDto })
++  @ApiTooManyRequestsResponse({ type: ErrorResponseDto })
++  @ApiServiceUnavailableResponse({ type: ErrorResponseDto })
++  async sendPhoneAlert(
++    @Req() req: { user: { userId: string } },
++    @Body() body: PhoneAlertDto,
++  ): Promise<{ sent: boolean }> {
++    await this.phoneAlert.send(req.user.userId, body.deviceId);
++    return { sent: true };
++  }
++}
+diff --git a/BE/notification/notification.module.ts b/BE/notification/notification.module.ts
+index 33475ca..79200a2 100644
+--- a/BE/notification/notification.module.ts
++++ b/BE/notification/notification.module.ts
+@@ -1,12 +1,15 @@
+ import { Module } from '@nestjs/common';
+ import { HttpModule } from '@nestjs/axios';
+ 
++import { NotificationController } from './notification.controller';
+ import { NotificationService } from './notification.service';
++import { PhoneAlertService } from './phone-alert.service';
+ import { PrismaModule } from '../../prisma/prisma.module';
+ 
+ @Module({
+   imports: [HttpModule, PrismaModule],
+-  providers: [NotificationService],
+-  exports: [NotificationService],
++  controllers: [NotificationController],
++  providers: [NotificationService, PhoneAlertService],
++  exports: [NotificationService, PhoneAlertService],
+ })
+ export class NotificationModule {}
+diff --git a/BE/notification/phone-alert.service.ts b/BE/notification/phone-alert.service.ts
+new file mode 100644
+index 0000000..35fe0a1
+--- /dev/null
++++ b/BE/notification/phone-alert.service.ts
+@@ -0,0 +1,75 @@
++import { HttpService } from '@nestjs/axios';
++import {
++  HttpException,
++  HttpStatus,
++  Injectable,
++  Logger,
++  ServiceUnavailableException,
++} from '@nestjs/common';
++import { ConfigService } from '@nestjs/config';
++import { firstValueFrom } from 'rxjs';
++
++const TITLE = '[긴급재난문자] 공부 중 스마트폰 감지';
++const MESSAGES = [
++  '혹시 게임하는 거 아니죠?',
++  '도서관 와이파이 쓰러 오셨군요.',
++  '현재 가장 활발하게 활동 중인 신체 부위는 엄지손가락입니다.',
++  '이 정도면 집에서 누워서 하시는 게 더 효율적입니다.',
++  '지금 그 화면, 내일 시험 범위가 아닙니다.',
++  '학점이 당신의 엄지를 지켜보고 있습니다.',
++];
++const COOLDOWN_MS = 60_000;
++
++interface PushResponse {
++  resultCode: number;
++  resultData: { deviceId: string };
++}
++
++@Injectable()
++export class PhoneAlertService {
++  private readonly logger = new Logger(PhoneAlertService.name);
++  private readonly pushUrl: string;
++  // 사용자별 마지막 전송 시각 (과다 전송 방지)
++  private readonly lastSent = new Map<string, number>();
++
++  constructor(
++    private readonly httpService: HttpService,
++    private readonly config: ConfigService,
++  ) {
++    this.pushUrl = `${this.config.getOrThrow<string>('PUSH_SERVER_URL')}/api/push`;
++  }
++
++  async send(userId: string, deviceId: string): Promise<void> {
++    const now = Date.now();
++    if (now - (this.lastSent.get(userId) ?? 0) < COOLDOWN_MS) {
++      throw new HttpException(
++        '알림 전송이 너무 잦습니다.',
++        HttpStatus.TOO_MANY_REQUESTS,
++      );
++    }
++    this.lastSent.set(userId, now);
++
++    const message = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
++    try {
++      const res = await firstValueFrom(
++        this.httpService.post<PushResponse>(this.pushUrl, {
++          deviceId,
++          title: TITLE,
++          message,
++        }),
++      );
++      if (res.data.resultCode !== 100) {
++        throw new ServiceUnavailableException('푸시 서버가 전송을 거부했습니다.');
++      }
++      this.logger.log(`Phone alert 성공: ${deviceId}`);
++    } catch (e) {
++      this.lastSent.delete(userId);
++      if (e instanceof HttpException) throw e;
++      this.logger.error(
++        'Push Server 요청 중 오류 발생',
++        e instanceof Error ? e.stack : String(e),
++      );
++      throw new ServiceUnavailableException('푸시 서버와 통신할 수 없습니다.');
++    }
++  }
++}
+diff --git a/frontend/src/api/notifications.ts b/frontend/src/api/notifications.ts
+new file mode 100644
+index 0000000..fc8c578
+--- /dev/null
++++ b/frontend/src/api/notifications.ts
+@@ -0,0 +1,9 @@
++import { request } from './client';
++
++export const notificationApi = {
++  phoneAlert: (deviceId: string) =>
++    request<{ sent: boolean }>('/notification/phone-alert', {
++      method: 'POST',
++      body: { deviceId },
++    }),
++};
+diff --git a/frontend/src/features/ai-analysis/analysis.css b/frontend/src/features/ai-analysis/analysis.css
+index ec75d27..a42f940 100644
+--- a/frontend/src/features/ai-analysis/analysis.css
++++ b/frontend/src/features/ai-analysis/analysis.css
+@@ -29,3 +29,28 @@
+   color: var(--muted);
+   font-size: 0.9rem;
+ }
++
++.analysis-device {
++  max-width: 640px;
++  margin-top: 16px;
++}
++
++.coach-toast {
++  position: fixed;
++  top: 50%;
++  left: 50%;
++  z-index: 1000;
++  width: min(320px, calc(100vw - 32px));
++  padding: 16px 20px;
++  transform: translate(-50%, -50%);
++  background: var(--surface);
++  border: 2px solid var(--accent);
++  border-radius: var(--radius);
++  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
++  text-align: center;
++  font-weight: 600;
++}
++
++.coach-toast p {
++  margin: 0 0 8px;
++}
+diff --git a/frontend/src/features/ai-analysis/components/PostureToast.tsx b/frontend/src/features/ai-analysis/components/PostureToast.tsx
+new file mode 100644
+index 0000000..3243612
+--- /dev/null
++++ b/frontend/src/features/ai-analysis/components/PostureToast.tsx
+@@ -0,0 +1,16 @@
++interface Props {
++  message: string | null;
++  onClose: () => void;
++}
++
++export function PostureToast({ message, onClose }: Props) {
++  if (!message) return null;
++  return (
++    <div className="coach-toast" role="alert">
++      <p>{message}</p>
++      <button type="button" className="btn btn-ghost" onClick={onClose}>
++        확인
++      </button>
++    </div>
++  );
++}
+diff --git a/frontend/src/features/ai-analysis/hooks/useCoach.ts b/frontend/src/features/ai-analysis/hooks/useCoach.ts
+new file mode 100644
+index 0000000..037369a
+--- /dev/null
++++ b/frontend/src/features/ai-analysis/hooks/useCoach.ts
+@@ -0,0 +1,104 @@
++import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
++import { notificationApi } from '../../../api/notifications';
++import { errorText } from '../../../components/format';
++import { pickTurtleMessage } from '../lib/messages';
++import {
++  evaluatePosture,
++  loadBaseline,
++  saveBaseline,
++} from '../lib/posture';
++import type { AnalysisFrame } from '../types';
++
++const BAD_MS = 10_000; // 나쁜 자세 유지 시간
++const PHONE_MS = 10_000; // 스마트폰 사용 유지 시간
++const GRACE_MS = 2_000; // 감지 끊김 허용 시간
++const TOAST_COOLDOWN_MS = 60_000;
++const PUSH_COOLDOWN_MS = 120_000;
++const TOAST_MS = 6_000;
++
++interface Hold {
++  since: number | null;
++  last: number;
++}
++
++// 조건이 유지된 시간(ms)을 돌려준다. 잠깐 끊겨도 GRACE_MS 안이면 유지로 본다.
++function hold(h: Hold, active: boolean, now: number): number {
++  if (active) {
++    h.since ??= now;
++    h.last = now;
++  } else if (now - h.last > GRACE_MS) {
++    h.since = null;
++  }
++  return h.since === null ? 0 : now - h.since;
++}
++
++export function useCoach(frame: AnalysisFrame | null, deviceId: string) {
++  const [baseline, setBaseline] = useState(loadBaseline);
++  const [toast, setToast] = useState<string | null>(null);
++  const [pushError, setPushError] = useState<string | null>(null);
++  const [pushedAt, setPushedAt] = useState<number | null>(null);
++
++  const bad = useRef<Hold>({ since: null, last: 0 });
++  const phone = useRef<Hold>({ since: null, last: 0 });
++  const lastToast = useRef(0);
++  const lastPush = useRef(0);
++  const ratio = useRef<number | null>(null);
++  const device = useRef(deviceId);
++  device.current = deviceId;
++
++  const posture = useMemo(
++    () => (frame?.pose ? evaluatePosture(frame.pose.landmarks, baseline) : null),
++    [frame, baseline],
++  );
++
++  useEffect(() => {
++    if (!frame) {
++      bad.current = { since: null, last: 0 };
++      phone.current = { since: null, last: 0 };
++      ratio.current = null;
++      return;
++    }
++    const now = Date.now();
++    ratio.current = posture?.ratio ?? null;
++
++    const badMs = hold(bad.current, !!posture?.bad, now);
++    if (posture && badMs >= BAD_MS && now - lastToast.current >= TOAST_COOLDOWN_MS) {
++      lastToast.current = now;
++      setToast(pickTurtleMessage(posture.turtlePct));
++    }
++
++    const phoneMs = hold(phone.current, frame.objects.length > 0, now);
++    if (
++      phoneMs >= PHONE_MS &&
++      device.current &&
++      now - lastPush.current >= PUSH_COOLDOWN_MS
++    ) {
++      lastPush.current = now;
++      notificationApi
++        .phoneAlert(device.current)
++        .then(() => {
++          setPushedAt(now);
++          setPushError(null);
++        })
++        .catch((e: unknown) => setPushError(errorText(e)));
++    }
++  }, [frame, posture]);
++
++  useEffect(() => {
++    if (!toast) return;
++    const id = setTimeout(() => setToast(null), TOAST_MS);
++    return () => clearTimeout(id);
++  }, [toast]);
++
++  const calibrate = useCallback((): boolean => {
++    const r = ratio.current;
++    if (r === null) return false;
++    saveBaseline(r);
++    setBaseline(r);
++    return true;
++  }, []);
++
++  const dismiss = useCallback(() => setToast(null), []);
++
++  return { posture, toast, dismiss, calibrate, pushError, pushedAt };
++}
+diff --git a/frontend/src/features/ai-analysis/lib/messages.ts b/frontend/src/features/ai-analysis/lib/messages.ts
+new file mode 100644
+index 0000000..6f953d8
+--- /dev/null
++++ b/frontend/src/features/ai-analysis/lib/messages.ts
+@@ -0,0 +1,16 @@
++const GENERIC = [
++  '회원님, 목이 먼저 졸업하려고 합니다.',
++  '인간의 진화 과정을 역행하고 계십니다.',
++  '목이 어깨한테 마중 나가는 중입니다.',
++  '지금 척추가 사직서를 쓰고 있습니다.',
++  '화면이 당신을 부른 게 아니라 당신이 화면을 부르고 있습니다.',
++  '허리 펴세요. 학점은 허리에서 나옵니다.',
++];
++
++export function pickTurtleMessage(turtlePct: number): string {
++  const pool =
++    turtlePct >= 30
++      ? [`현재 목 상태: 거북이 진화 ${turtlePct}%`, ...GENERIC]
++      : GENERIC;
++  return pool[Math.floor(Math.random() * pool.length)];
++}
+diff --git a/frontend/src/features/ai-analysis/lib/posture.ts b/frontend/src/features/ai-analysis/lib/posture.ts
+new file mode 100644
+index 0000000..34c0556
+--- /dev/null
++++ b/frontend/src/features/ai-analysis/lib/posture.ts
+@@ -0,0 +1,72 @@
++import type { Landmark } from '../types';
++
++const MIN_VISIBILITY = 0.5;
++const BASELINE_KEY = 'postureBaseline';
++
++// ratio = (어깨 중심 y - 귀 중심 y) / 어깨 너비. 거북목이면 값이 줄어든다.
++export const DEFAULT_BASELINE = 0.6;
++const DROP_BAD = 0.15; // 기준 대비 15% 이상 감소 → 나쁨
++const DROP_FULL = 0.3; // 30% 감소 → 거북이 100%
++const TILT_BAD = 0.12; // 어깨 기울기 한계
++
++export interface PostureResult {
++  ratio: number;
++  tilt: number;
++  turtlePct: number;
++  bad: boolean;
++}
++
++const seen = (p?: Landmark): p is Landmark =>
++  !!p && (p.visibility ?? 0) >= MIN_VISIBILITY;
++
++export function measure(lm: Landmark[]): { ratio: number; tilt: number } | null {
++  const ls = lm[11];
++  const rs = lm[12];
++  if (!seen(ls) || !seen(rs)) return null;
++  const width = Math.hypot(ls.x - rs.x, ls.y - rs.y);
++  if (width < 0.05) return null;
++  const ears = [lm[7], lm[8]].filter(seen);
++  if (ears.length === 0) return null;
++  const earY = ears.reduce((s, p) => s + p.y, 0) / ears.length;
++  const shoulderY = (ls.y + rs.y) / 2;
++  return {
++    ratio: (shoulderY - earY) / width,
++    tilt: Math.abs(ls.y - rs.y) / width,
++  };
++}
++
++export function evaluatePosture(
++  lm: Landmark[],
++  baseline: number,
++): PostureResult | null {
++  const m = measure(lm);
++  if (!m) return null;
++  const drop = 1 - m.ratio / baseline;
++  const turtlePct = Math.min(
++    100,
++    Math.round((Math.max(drop, 0) / DROP_FULL) * 100),
++  );
++  return {
++    ratio: m.ratio,
++    tilt: m.tilt,
++    turtlePct,
++    bad: drop >= DROP_BAD || m.tilt >= TILT_BAD,
++  };
++}
++
++export function loadBaseline(): number {
++  try {
++    const n = Number(localStorage.getItem(BASELINE_KEY));
++    return Number.isFinite(n) && n > 0.1 ? n : DEFAULT_BASELINE;
++  } catch {
++    return DEFAULT_BASELINE;
++  }
++}
++
++export function saveBaseline(value: number): void {
++  try {
++    localStorage.setItem(BASELINE_KEY, String(value));
++  } catch {
++    /* 저장 실패는 무시 */
++  }
++}
+diff --git a/frontend/src/features/ai-analysis/pages/AnalysisPage.tsx b/frontend/src/features/ai-analysis/pages/AnalysisPage.tsx
+index 833db1b..facd6fa 100644
+--- a/frontend/src/features/ai-analysis/pages/AnalysisPage.tsx
++++ b/frontend/src/features/ai-analysis/pages/AnalysisPage.tsx
+@@ -1,11 +1,15 @@
+-import { useRef } from 'react';
++import { useRef, useState } from 'react';
+ import { ErrorMessage } from '../../../components/ErrorMessage';
+ import { OverlayCanvas } from '../components/OverlayCanvas';
++import { PostureToast } from '../components/PostureToast';
+ import { useAnalysis } from '../hooks/useAnalysis';
++import { useCoach } from '../hooks/useCoach';
+ import '../analysis.css';
+ 
+ const JOINTS: Record<number, string> = {
+   0: '코',
++  7: '왼쪽 귀',
++  8: '오른쪽 귀',
+   11: '왼쪽 어깨',
+   12: '오른쪽 어깨',
+   13: '왼쪽 팔꿈치',
+@@ -14,14 +18,42 @@ const JOINTS: Record<number, string> = {
+   16: '오른쪽 손목',
+ };
+ 
++const DEVICE_KEY = 'pushDeviceId';
++
++function loadDeviceId(): string {
++  try {
++    return localStorage.getItem(DEVICE_KEY) ?? '';
++  } catch {
++    return '';
++  }
++}
++
+ export function AnalysisPage() {
+   const videoRef = useRef<HTMLVideoElement>(null);
+   const { status, error, frame, start, stop } = useAnalysis(videoRef);
++  const [deviceId, setDeviceId] = useState(loadDeviceId);
++  const [calibration, setCalibration] = useState<string | null>(null);
++  const coach = useCoach(frame, deviceId.trim());
+   const running = status === 'running';
+ 
++  const handleDeviceId = (value: string) => {
++    setDeviceId(value);
++    try {
++      localStorage.setItem(DEVICE_KEY, value.trim());
++    } catch {
++      /* 저장 실패는 무시 */
++    }
++  };
++
++  const handleCalibrate = () =>
++    setCalibration(
++      coach.calibrate() ? '기준 자세 저장함.' : '어깨와 귀가 안 보입니다.',
++    );
++
+   return (
+     <section>
+       <h1>자세 · 스마트폰 분석</h1>
++      <PostureToast message={coach.toast} onClose={coach.dismiss} />
+       <div className="analysis-stage">
+         <video ref={videoRef} className="analysis-video" muted playsInline />
+         <OverlayCanvas frame={frame} video={videoRef.current} />
+@@ -39,9 +71,36 @@ export function AnalysisPage() {
+         <button type="button" className="btn" disabled={!running} onClick={stop}>
+           중지
+         </button>
++        <button
++          type="button"
++          className="btn"
++          disabled={!running}
++          onClick={handleCalibrate}
++        >
++          바른 자세로 기준 저장
++        </button>
++        {calibration && <span className="muted">{calibration}</span>}
+       </div>
++      <div className="form analysis-device">
++        <label>
++          스마트폰 기기 ID (푸시 알림용)
++          <input
++            type="text"
++            value={deviceId}
++            onChange={(e) => handleDeviceId(e.target.value)}
++            placeholder="push device id"
++          />
++        </label>
++      </div>
++      <ErrorMessage message={coach.pushError} />
+       {frame && (
+         <ul className="analysis-list">
++          <li>
++            거북이 지수:{' '}
++            {coach.posture
++              ? `${coach.posture.turtlePct}% (${coach.posture.bad ? '나쁨' : '좋음'})`
++              : '-'}
++          </li>
+           {Object.entries(JOINTS).map(([i, name]) => {
+             const p = frame.pose?.landmarks[Number(i)];
+             return (
+@@ -59,6 +118,10 @@ export function AnalysisPage() {
+               ? frame.objects.map((o) => o.score.toFixed(2)).join(', ')
+               : '없음'}
+           </li>
++          <li>
++            마지막 푸시:{' '}
++            {coach.pushedAt ? new Date(coach.pushedAt).toLocaleTimeString('ko-KR') : '-'}
++          </li>
+         </ul>
+       )}
+     </section>
