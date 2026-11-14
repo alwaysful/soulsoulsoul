@@ -1,0 +1,27 @@
+.quit-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.quit-banner-ready {
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom: 2px solid var(--accent);
+}
+
+.quit-timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.3rem;
+}

@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ErrorMessage } from '../../../components/ErrorMessage';
 import { OverlayCanvas } from '../components/OverlayCanvas';
 import { PostureToast } from '../components/PostureToast';
+import { QuitBanner } from '../components/QuitBanner';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { useCoach } from '../hooks/useCoach';
+import { useQuitGuard } from '../hooks/useQuitGuard';
 import { useScreenWatch } from '../hooks/useScreenWatch';
 import { useSleep } from '../hooks/useSleep';
 import { requestDesktopPermission } from '../lib/notify';
@@ -40,6 +42,20 @@ export function AnalysisPage() {
   const sleep = useSleep(frame, deviceId.trim());
   const screen = useScreenWatch();
   const running = status === 'running';
+  const quit = useQuitGuard();
+  const busy = running || screen.active;
+
+  useEffect(() => {
+    if (!busy) quit.reset();
+  }, [busy, quit.reset]);
+
+  // 공부 중 탭 닫기도 한 번 막는다
+  useEffect(() => {
+    if (!busy) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [busy]);
 
   const handleStart = () => {
     void requestDesktopPermission();
@@ -48,11 +64,17 @@ export function AnalysisPage() {
 
   const handleScreen = () => {
     if (screen.active) {
-      screen.stop();
+      quit.request();
       return;
     }
     void requestDesktopPermission();
     void screen.start();
+  };
+
+  const confirmQuit = () => {
+    stop();
+    screen.stop();
+    quit.reset();
   };
 
   const handleDeviceId = (value: string) => {
@@ -71,13 +93,20 @@ export function AnalysisPage() {
 
   return (
     <section>
+      <QuitBanner
+        phase={quit.phase}
+        remainingMs={quit.remainingMs}
+        onCancel={quit.reset}
+        onQuit={confirmQuit}
+      />
       <h1>자세 · 스마트폰 분석</h1>
       <PostureToast
-        message={coach.toast ?? sleep.toast ?? screen.toast}
+        message={quit.toast ?? coach.toast ?? sleep.toast ?? screen.toast}
         onClose={() => {
           coach.dismiss();
           sleep.dismiss();
           screen.dismiss();
+          quit.dismiss();
         }}
       />
       <div className="analysis-stage">
@@ -94,7 +123,7 @@ export function AnalysisPage() {
         >
           {status === 'loading' ? '준비 중' : '시작'}
         </button>
-        <button type="button" className="btn" disabled={!running} onClick={stop}>
+        <button type="button" className="btn" disabled={!running} onClick={quit.request}>
           중지
         </button>
         <button
