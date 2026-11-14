@@ -24,6 +24,11 @@ async function bootstrap(): Promise<void> {
   // 요청/응답 로깅 (비밀번호, 토큰은 마스킹)
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  // 프론트엔드 CORS
+  app.enableCors({
+    origin: configService.getOrThrow<string>('CORS_ORIGIN'),
+  });
+
   // 종료 시그널에서 onModuleDestroy(Prisma 연결 해제)가 실행되도록 설정
   app.enableShutdownHooks();
 

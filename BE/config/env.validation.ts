@@ -61,6 +61,10 @@ export class EnvironmentVariables {
 
   @IsUrl({ require_tld: false })
   PUSH_SERVER_URL!: string;
+
+  // 프론트엔드 Origin (CORS 허용)
+  @IsUrl({ require_tld: false })
+  CORS_ORIGIN: string = 'http://localhost:5173';
 }
 
 export function validateEnv(
