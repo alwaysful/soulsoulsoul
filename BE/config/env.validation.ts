@@ -65,6 +65,14 @@ export class EnvironmentVariables {
   // 프론트엔드 Origin (CORS 허용)
   @IsUrl({ require_tld: false })
   CORS_ORIGIN: string = 'http://localhost:5173';
+
+  // 화면 분석(Claude API). 비어 있으면 /study/screen-check 는 503
+  @IsString()
+  ANTHROPIC_API_KEY: string = '';
+
+  @IsString()
+  @IsNotEmpty()
+  ANTHROPIC_MODEL: string = 'claude-haiku-5-5';
 }
 
 export function validateEnv(

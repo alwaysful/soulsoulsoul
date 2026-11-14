@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger, ValidationPipe } from '@nestjs/common';
@@ -7,7 +8,9 @@ import { HttpExceptionFilter } from './common/exception.filter';
 import { LoggingInterceptor } from './common/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // 화면 캡처(base64 JPEG) 수신용
+  app.useBodyParser('json', { limit: '5mb' });
   const configService = app.get(ConfigService);
 
   // Validation

@@ -15,10 +15,16 @@ export interface DetectedObject {
   box: { x: number; y: number; width: number; height: number };
 }
 
+export interface FaceResult {
+  // 양쪽 눈 감김 점수 평균 (0~1)
+  eyeBlink: number;
+}
+
 export interface AnalysisFrame {
   timestamp: number;
   pose: PoseResult | null;
   objects: DetectedObject[];
+  face: FaceResult | null;
 }
 
 export interface VisionService<T> {

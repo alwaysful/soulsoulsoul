@@ -6,6 +6,8 @@ import { CategoryModule } from './category/category.module';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.validation';
 import { NotificationModule } from './notification/notification.module';
+import { SleepModule } from './sleep/sleep.module';
+import { StudyModule } from './study/study.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { NotificationModule } from './notification/notification.module';
     CategoryModule,
     AuthModule,
     NotificationModule,
+    SleepModule,
+    StudyModule,
   ],
   controllers: [AppController],
 })

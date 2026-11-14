@@ -14,6 +14,8 @@ cd frontend && npm install && npm run dev
 ## AI 분석 (`/analysis`)
 모델 파일을 `frontend/public/models/` 에 둔다.
 - `pose_landmarker_lite.task`
+- `face_landmarker.task` (눈 감김 감지)
 - `efficientdet_lite0.tflite` (COCO, `cell phone` 클래스)
 
-영상은 브라우저 안에서만 처리한다.
+웹캠 영상은 브라우저 안에서만 처리한다.
+화면 감시: 캡처 이미지는 분석을 위해 백엔드를 거쳐 Claude API 로 전송된다.

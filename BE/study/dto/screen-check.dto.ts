@@ -1,0 +1,22 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
+
+export class ScreenCheckDto {
+  @ApiProperty({ description: 'JPEG base64 (data: 접두어 없이)' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(3_000_000)
+  @Matches(/^[A-Za-z0-9+/=]+$/)
+  image!: string;
+}
+
+export class ScreenCheckResponseDto {
+  @ApiProperty({ example: true })
+  distracted!: boolean;
+
+  @ApiProperty({ example: 'game', description: 'study|game|video|sns|shopping|other' })
+  activity!: string;
+
+  @ApiProperty({ type: String, nullable: true, example: '교수님이 주신 퀘스트부터 완료하시죠.' })
+  message!: string | null;
+}

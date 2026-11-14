@@ -16,7 +16,11 @@ function mask(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>).map(([k, v]) => {
         const key = k.toLowerCase();
-        const sensitive = key === 'code' || SENSITIVE_KEYS.some((s) => key.includes(s));
+        // image: 화면 캡처 base64 는 로그에 남기지 않는다
+        const sensitive =
+          key === 'code' ||
+          key === 'image' ||
+          SENSITIVE_KEYS.some((s) => key.includes(s));
         return [k, sensitive ? '***' : mask(v)];
       }),
     );

@@ -31,7 +31,12 @@ export class NotificationController {
     @Req() req: { user: { userId: string } },
     @Body() body: PhoneAlertDto,
   ): Promise<{ sent: boolean }> {
-    await this.phoneAlert.send(req.user.userId, body.deviceId);
+    await this.phoneAlert.send(
+      req.user.userId,
+      body.deviceId,
+      body.kind,
+      body.durationSec,
+    );
     return { sent: true };
   }
 }

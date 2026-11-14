@@ -4,6 +4,9 @@ import { OverlayCanvas } from '../components/OverlayCanvas';
 import { PostureToast } from '../components/PostureToast';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { useCoach } from '../hooks/useCoach';
+import { useScreenWatch } from '../hooks/useScreenWatch';
+import { useSleep } from '../hooks/useSleep';
+import { requestDesktopPermission } from '../lib/notify';
 import '../analysis.css';
 
 const JOINTS: Record<number, string> = {
@@ -34,7 +37,23 @@ export function AnalysisPage() {
   const [deviceId, setDeviceId] = useState(loadDeviceId);
   const [calibration, setCalibration] = useState<string | null>(null);
   const coach = useCoach(frame, deviceId.trim());
+  const sleep = useSleep(frame, deviceId.trim());
+  const screen = useScreenWatch();
   const running = status === 'running';
+
+  const handleStart = () => {
+    void requestDesktopPermission();
+    void start();
+  };
+
+  const handleScreen = () => {
+    if (screen.active) {
+      screen.stop();
+      return;
+    }
+    void requestDesktopPermission();
+    void screen.start();
+  };
 
   const handleDeviceId = (value: string) => {
     setDeviceId(value);
@@ -53,7 +72,14 @@ export function AnalysisPage() {
   return (
     <section>
       <h1>자세 · 스마트폰 분석</h1>
-      <PostureToast message={coach.toast} onClose={coach.dismiss} />
+      <PostureToast
+        message={coach.toast ?? sleep.toast ?? screen.toast}
+        onClose={() => {
+          coach.dismiss();
+          sleep.dismiss();
+          screen.dismiss();
+        }}
+      />
       <div className="analysis-stage">
         <video ref={videoRef} className="analysis-video" muted playsInline />
         <OverlayCanvas frame={frame} video={videoRef.current} />
@@ -64,7 +90,7 @@ export function AnalysisPage() {
           type="button"
           className="btn btn-primary"
           disabled={status === 'loading' || running}
-          onClick={() => void start()}
+          onClick={handleStart}
         >
           {status === 'loading' ? '준비 중' : '시작'}
         </button>
@@ -78,6 +104,9 @@ export function AnalysisPage() {
           onClick={handleCalibrate}
         >
           바른 자세로 기준 저장
+        </button>
+        <button type="button" className="btn" onClick={handleScreen}>
+          {screen.active ? '화면 감시 중지' : '화면 감시 시작'}
         </button>
         {calibration && <span className="muted">{calibration}</span>}
       </div>
@@ -93,6 +122,8 @@ export function AnalysisPage() {
         </label>
       </div>
       <ErrorMessage message={coach.pushError} />
+      <ErrorMessage message={sleep.error} />
+      <ErrorMessage message={screen.error} />
       {frame && (
         <ul className="analysis-list">
           <li>
@@ -121,6 +152,11 @@ export function AnalysisPage() {
           <li>
             마지막 푸시:{' '}
             {coach.pushedAt ? new Date(coach.pushedAt).toLocaleTimeString('ko-KR') : '-'}
+          </li>
+          <li>수면: {sleep.sleeping ? '수면 중' : '깨어 있음'}</li>
+          <li>
+            화면:{' '}
+            {screen.active ? (screen.last?.activity ?? '분석 대기') : '꺼짐'}
           </li>
         </ul>
       )}
