@@ -12,6 +12,7 @@ import { ScreenCheckResponseDto } from './dto/screen-check.dto';
 
 const COOLDOWN_MS = 5_000;
 const TIMEOUT_MS = 90_000;
+const MODEL = 'gemma4:12b';
 const ACTIVITIES = ['study', 'game', 'video', 'sns', 'shopping', 'other'];
 // 서버 보정: 모델이 study라고 해도 요약에 게임 단서가 있으면 뒤집는다
 const GAME_HINT =
@@ -57,7 +58,6 @@ interface Verdict {
 export class StudyService {
   private readonly logger = new Logger(StudyService.name);
   private readonly baseUrl: string;
-  private readonly model: string;
   private readonly lastCheck = new Map<string, number>();
 
   constructor(
@@ -67,14 +67,9 @@ export class StudyService {
     this.baseUrl = this.config
       .getOrThrow<string>('OLLAMA_URL')
       .replace(/\/$/, '');
-    this.model = this.config.getOrThrow<string>('OLLAMA_MODEL');
   }
 
-  async check(
-    userId: string,
-    image: string,
-    model?: string,
-  ): Promise<ScreenCheckResponseDto> {
+  async check(userId: string, image: string): Promise<ScreenCheckResponseDto> {
     const now = Date.now();
     if (now - (this.lastCheck.get(userId) ?? 0) < COOLDOWN_MS) {
       throw new HttpException(
@@ -86,7 +81,7 @@ export class StudyService {
 
     let text: string;
     try {
-      text = await this.ask(image, model);
+      text = await this.ask(image);
     } catch (e) {
       this.lastCheck.delete(userId);
       this.logger.error(
@@ -98,12 +93,12 @@ export class StudyService {
     return this.toResult(this.parse(text));
   }
 
-  private async ask(image: string, model?: string): Promise<string> {
+  private async ask(image: string): Promise<string> {
     const res = await firstValueFrom(
       this.httpService.post<OllamaResponse>(
         `${this.baseUrl}/api/chat`,
         {
-          model: model ?? this.model,
+          model: MODEL,
           stream: false,
           think: false,
           format: 'json',

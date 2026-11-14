@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { notificationApi } from '../../../api/notifications';
 import { errorText } from '../../../components/format';
 import { pickTurtleMessage } from '../lib/messages';
+import { notifyDesktop } from '../lib/notify';
 import {
   evaluatePosture,
   loadBaseline,
@@ -65,7 +66,9 @@ export function useCoach(frame: AnalysisFrame | null, deviceId: string) {
     const badMs = hold(bad.current, !!posture?.bad, now);
     if (posture && badMs >= BAD_MS && now - lastToast.current >= TOAST_COOLDOWN_MS) {
       lastToast.current = now;
-      setToast(pickTurtleMessage(posture.turtlePct));
+      const msg = pickTurtleMessage(posture.turtlePct);
+      setToast(msg);
+      notifyDesktop('자세 불량', msg);
     }
 
     const phoneMs = hold(

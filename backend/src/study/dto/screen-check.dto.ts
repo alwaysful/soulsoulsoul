@@ -1,19 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-} from 'class-validator';
-
-export const SCREEN_MODELS = [
-  'qwen3-vl:4b',
-  'qwen3.5:9b',
-  'gemma4:12b',
-] as const;
-export type ScreenModel = (typeof SCREEN_MODELS)[number];
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
 
 export class ScreenCheckDto {
   @ApiProperty({ description: 'JPEG base64 (data: 접두어 없이)' })
@@ -22,14 +8,6 @@ export class ScreenCheckDto {
   @MaxLength(3_000_000)
   @Matches(/^[A-Za-z0-9+/=]+$/)
   image!: string;
-
-  @ApiPropertyOptional({
-    enum: SCREEN_MODELS,
-    description: '미지정 시 서버 기본 모델(OLLAMA_MODEL)',
-  })
-  @IsOptional()
-  @IsIn(SCREEN_MODELS)
-  model?: ScreenModel;
 }
 
 export class ScreenCheckResponseDto {

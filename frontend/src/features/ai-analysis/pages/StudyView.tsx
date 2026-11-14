@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { ErrorMessage } from '../../../components/ErrorMessage';
-import { ModelSelect } from '../components/ModelSelect';
 import { OverlayCanvas } from '../components/OverlayCanvas';
 import { PostureToast } from '../components/PostureToast';
 import { QuitBanner } from '../components/QuitBanner';
@@ -8,7 +7,6 @@ import { SleepGauge } from '../components/SleepGauge';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { useCoach } from '../hooks/useCoach';
 import { useQuitGuard } from '../hooks/useQuitGuard';
-import { useScreenModel } from '../hooks/useScreenModel';
 import { useScreenWatch } from '../hooks/useScreenWatch';
 import { useSleep } from '../hooks/useSleepGauge';
 import { pickPhoneMessage, pickSlackMessage, pickSleepStart } from '../lib/hints';
@@ -69,11 +67,16 @@ export function StudyPage() {
   const [recent, setRecent] = useState('');
   const coach = useCoach(frame, deviceId.trim());
   const sleep = useSleep(frame, deviceId.trim());
-  const [model, setModel] = useScreenModel();
-  const screen = useScreenWatch(model);
+  const screen = useScreenWatch();
   const running = status === 'running';
   const quit = useQuitGuard();
   const busy = running || screen.active;
+  // OS 알림 허용 시 사이트 내 팝업은 숨긴다 (미리보기 제외)
+  const osNotify =
+    typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const siteToast = osNotify
+    ? null
+    : (quit.toast ?? coach.toast ?? sleep.toast ?? screen.toast);
 
   const values: Record<(typeof CHIPS)[number]['key'], number> = {
     posture: coach.posture?.turtlePct ?? 0,
@@ -177,7 +180,7 @@ export function StudyPage() {
         onQuit={confirmQuit}
       />
       <PostureToast
-        message={preview ?? quit.toast ?? coach.toast ?? sleep.toast ?? screen.toast}
+        message={preview ?? siteToast}
         onClose={() => {
           setPreview(null);
           coach.dismiss();
@@ -252,7 +255,6 @@ export function StudyPage() {
             <ErrorMessage message={sleep.error} />
             <ErrorMessage message={screen.error} />
             <div className="study-links">
-              <ModelSelect value={model} onChange={setModel} />
               <button
                 type="button"
                 className="study-link"
@@ -297,7 +299,6 @@ export function StudyPage() {
                 <button type="button" className="btn btn-primary" onClick={handleWatchNow}>
                   당장 감시
                 </button>
-                <ModelSelect value={model} onChange={setModel} />
                 <button type="button" className="btn btn-ghost" onClick={() => setView('user')}>
                   돌아가기
                 </button>

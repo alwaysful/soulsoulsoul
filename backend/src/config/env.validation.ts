@@ -42,13 +42,9 @@ export class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   CORS_ORIGIN: string = 'http://localhost:5173';
 
-  // 화면 분석: 로컬 Ollama (Qwen3-VL 4B)
+  // 화면 분석: 로컬 Ollama (모델은 gemma4:12b 고정, study.service.ts)
   @IsUrl({ require_tld: false })
   OLLAMA_URL: string = 'http://localhost:11434';
-
-  @IsString()
-  @IsNotEmpty()
-  OLLAMA_MODEL: string = 'qwen3-vl:4b';
 }
 
 export function validateEnv(
