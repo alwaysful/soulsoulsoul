@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authApi } from '../api/auth';
-import { useAuth } from '../auth/AuthContext';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { errorText } from '../components/format';
+import { authApi } from '../../../api/auth';
+import { useAuth } from '../../../contexts/AuthContext';
+import { ErrorMessage } from '../../../components/ErrorMessage';
+import { errorText } from '../../../components/format';
 
 // BE의 INFOTEAM_CALLBACK_URL 이 이 페이지(/auth/callback)를 가리켜야 한다.
 export function AuthCallbackPage() {

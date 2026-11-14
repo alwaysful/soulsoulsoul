@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { categoryApi } from '../api/categories';
-import { postApi } from '../api/posts';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { errorText } from '../components/format';
-import type { Category } from '../types';
+import { categoryApi } from '../../../api/categories';
+import { postApi } from '../../../api/posts';
+import { ErrorMessage } from '../../../components/ErrorMessage';
+import { errorText } from '../../../components/format';
+import type { Category } from '../../../types';
 
 export function PostFormPage() {
   const { id } = useParams<{ id: string }>();

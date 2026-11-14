@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ApiError } from '../api/client';
-import { postApi } from '../api/posts';
-import { useAuth } from '../auth/AuthContext';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { errorText, formatDate } from '../components/format';
-import type { Post } from '../types';
+import { ApiError } from '../../../api/client';
+import { postApi } from '../../../api/posts';
+import { useAuth } from '../../../contexts/AuthContext';
+import { ErrorMessage } from '../../../components/ErrorMessage';
+import { errorText, formatDate } from '../../../components/format';
+import type { Post } from '../../../types';
 
 export function PostDetailPage() {
   const { id } = useParams<{ id: string }>();

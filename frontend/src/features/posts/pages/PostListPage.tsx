@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { categoryApi } from '../api/categories';
-import { postApi } from '../api/posts';
-import { useAuth } from '../auth/AuthContext';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { Pagination } from '../components/Pagination';
-import { errorText, formatDate } from '../components/format';
-import type { Category, PostList } from '../types';
+import { categoryApi } from '../../../api/categories';
+import { postApi } from '../../../api/posts';
+import { useAuth } from '../../../contexts/AuthContext';
+import { ErrorMessage } from '../../../components/ErrorMessage';
+import { Pagination } from '../../../components/Pagination';
+import { errorText, formatDate } from '../../../components/format';
+import type { Category, PostList } from '../../../types';
 
 const LIMIT = 10;
 

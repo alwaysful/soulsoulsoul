@@ -1,0 +1,16 @@
+.analysis-video {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: var(--radius);
+  transform: scaleX(-1);
+}
+
+.analysis-list {
+  margin: 16px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

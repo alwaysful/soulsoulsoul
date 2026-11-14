@@ -1,34 +1,30 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { authApi } from '../api/auth';
-import { useAuth } from '../auth/AuthContext';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { errorText } from '../components/format';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { authApi } from '../../../api/auth';
+import { useAuth } from '../../../contexts/AuthContext';
+import { ErrorMessage } from '../../../components/ErrorMessage';
+import { errorText } from '../../../components/format';
 
-export function SignupPage() {
-  const { signIn } = useAuth();
+export function LoginPage() {
+  const { user, signIn } = useAuth();
   const navigate = useNavigate();
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/';
 
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  if (user) return <Navigate to={from} replace />;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await authApi.signup({
-        email,
-        password,
-        username: username.trim() || undefined,
-      });
-      // 가입 후 바로 로그인
       const { accessToken } = await authApi.login({ email, password });
       signIn(accessToken);
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -38,7 +34,7 @@ export function SignupPage() {
 
   return (
     <section className="narrow">
-      <h1>회원가입</h1>
+      <h1>로그인</h1>
       <form onSubmit={handleSubmit} className="form">
         <label>
           이메일
@@ -51,32 +47,26 @@ export function SignupPage() {
           />
         </label>
         <label>
-          닉네임 (선택)
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="nickname"
-          />
-        </label>
-        <label>
-          비밀번호 (6자 이상)
+          비밀번호
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            minLength={6}
+            autoComplete="current-password"
             required
           />
         </label>
         <ErrorMessage message={error} />
         <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? '가입 중' : '가입하기'}
+          {loading ? '로그인 중' : '로그인'}
         </button>
       </form>
+      <div className="divider">또는</div>
+      <a className="btn btn-block" href={authApi.infoteamLoginUrl}>
+        InfoTeam 계정으로 로그인
+      </a>
       <p className="muted center">
-        이미 계정이 있나요? <Link to="/login">로그인</Link>
+        계정이 없나요? <Link to="/signup">회원가입</Link>
       </p>
     </section>
   );

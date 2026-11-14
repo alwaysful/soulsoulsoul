@@ -1,13 +1,14 @@
 import { Route, Routes } from 'react-router-dom';
-import { Layout } from './components/Layout';
+import { Layout } from './layouts/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { LoginPage } from './pages/LoginPage';
+import { AnalysisPage } from './features/ai-analysis/pages/AnalysisPage';
+import { AuthCallbackPage } from './features/auth/pages/AuthCallbackPage';
+import { LoginPage } from './features/auth/pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { PostDetailPage } from './pages/PostDetailPage';
-import { PostFormPage } from './pages/PostFormPage';
-import { PostListPage } from './pages/PostListPage';
-import { SignupPage } from './pages/SignupPage';
+import { PostDetailPage } from './features/posts/pages/PostDetailPage';
+import { PostFormPage } from './features/posts/pages/PostFormPage';
+import { PostListPage } from './features/posts/pages/PostListPage';
+import { SignupPage } from './features/auth/pages/SignupPage';
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="posts/new" element={<PostFormPage />} />
           <Route path="posts/:id/edit" element={<PostFormPage />} />
+          <Route path="analysis" element={<AnalysisPage />} />
         </Route>
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
