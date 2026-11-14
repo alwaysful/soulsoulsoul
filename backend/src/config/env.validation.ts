@@ -36,30 +36,6 @@ export class EnvironmentVariables {
   BCRYPT_SALT_ROUNDS: number = 10;
 
   @IsUrl({ require_tld: false })
-  IDP_USERINFO_URL!: string;
-
-  @IsInt()
-  @Min(1)
-  IDP_HTTP_TIMEOUT_MS: number = 5000;
-
-  @IsString()
-  @IsNotEmpty()
-  INFOTEAM_CLIENT_ID!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  INFOTEAM_CLIENT_SECRET!: string;
-
-  @IsUrl({ require_tld: false })
-  INFOTEAM_AUTH_URL!: string;
-
-  @IsUrl({ require_tld: false })
-  INFOTEAM_TOKEN_URL!: string;
-
-  @IsUrl({ require_tld: false })
-  INFOTEAM_CALLBACK_URL!: string;
-
-  @IsUrl({ require_tld: false })
   PUSH_SERVER_URL!: string;
 
   // 프론트엔드 Origin (CORS 허용)

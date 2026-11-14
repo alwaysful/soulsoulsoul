@@ -2,7 +2,6 @@ import { Route, Routes } from 'react-router-dom';
 import { Layout } from './layouts/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AnalysisPage } from './features/ai-analysis/pages/AnalysisPage';
-import { AuthCallbackPage } from './features/auth/pages/AuthCallbackPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PostDetailPage } from './features/posts/pages/PostDetailPage';
@@ -23,7 +22,6 @@ export function App() {
         </Route>
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
-        <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -61,10 +61,6 @@ export function LoginPage() {
           {loading ? '로그인 중' : '로그인'}
         </button>
       </form>
-      <div className="divider">또는</div>
-      <a className="btn btn-block" href={authApi.infoteamLoginUrl}>
-        InfoTeam 계정으로 로그인
-      </a>
       <p className="muted center">
         계정이 없나요? <Link to="/signup">회원가입</Link>
       </p>
