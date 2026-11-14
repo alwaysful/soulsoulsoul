@@ -8,7 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { InfoTeamStrategy } from './infoteam.strategy';
 import { HttpModule } from '@nestjs/axios';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -16,7 +16,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     HttpModule,
     // JwtStrategy(검증)와 같은 JWT_SECRET으로 서명
     JwtModule.registerAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),

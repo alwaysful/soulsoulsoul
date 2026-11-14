@@ -18,9 +18,6 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { EnvironmentVariables } from '../config/env.validation';
 import { ConfigService } from '@nestjs/config';
 
-// 검증을 통과한 값만 쓴다는 의미로 두 번째 제네릭에 true
-type AppConfig = ConfigService<EnvironmentVariables, true>;
-
 interface IdpUserInfo {
   sub: string;
   email?: string;
@@ -84,7 +81,7 @@ export class AuthService {
     password: string,
     username?: string,
   ): Promise<UserResponseDto> {
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, this.saltRounds);
 
     try {
       const user = await this.authRepository.create({
@@ -134,9 +131,7 @@ export class AuthService {
     if (!user) {
       try {
         user = await this.authRepository.create({
-          email: oauthUser.email
-            ? this.normalizeEmail(oauthUser.email)
-            : oauthUser.email,
+          email: this.normalizeEmail(oauthUser.email),
           provider: oauthUser.provider,
           sub: oauthUser.providerId,
         });
