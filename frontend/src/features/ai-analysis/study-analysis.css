@@ -1,0 +1,78 @@
+.sleep-gauge {
+  position: relative;
+  width: min(414px, 100%);
+  height: 28px;
+  border-radius: 999px;
+  background: #1a1d26;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.sleep-gauge-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #ff5a36;
+  transition: width 0.2s linear;
+}
+
+.sleep-gauge span {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.analysis-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.analysis-layout > .analysis-stage,
+.analysis-left {
+  grid-column: 1;
+}
+
+.analysis-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.analysis-left .row {
+  margin-top: 0;
+}
+
+.analysis-right {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.analysis-right h2 {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+}
+
+.analysis-right .analysis-list {
+  margin-top: 12px;
+}
+
+.analysis-hints h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+@media (max-width: 720px) {
+  .analysis-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .analysis-right {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

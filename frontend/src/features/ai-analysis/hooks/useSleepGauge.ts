@@ -2,26 +2,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { notificationApi } from '../../../api/notifications';
 import { sleepApi } from '../../../api/sleep';
 import { errorText } from '../../../components/format';
+import { pickSleepStart } from '../lib/hints';
 import { notifyDesktop } from '../lib/notify';
-import { formatDuration, isSleepy } from '../lib/sleep';
+import { PRONE_MS, isProne } from '../lib/prone';
+import { formatDuration } from '../lib/sleep';
 import type { AnalysisFrame } from '../types';
 
-const SLEEP_MS = 120_000; // 이 시간 이상 졸음 상태면 수면으로 판정
-const WAKE_GRACE_MS = 15_000; // 이 시간 이상 깨어 있으면 기상으로 판정 (눈 깜빡임 흡수)
+const WAKE_GRACE_MS = 5_000; // 이 시간 이상 안 엎드려 있으면 기상/게이지 초기화
 const TOAST_MS = 8_000;
-const START_MESSAGES = [
-  '잘 자요. 공부는 제가 대신 못 합니다.',
-  '도서관을 숙박시설로 이용해 주셔서 감사합니다.',
-  '오늘의 학습 성과: 렘수면 진입 성공.',
-];
 
+// 엎드림이 PRONE_MS 지속되면 수면. progress 는 0~1 게이지 값.
 export function useSleep(frame: AnalysisFrame | null, deviceId: string) {
   const [sleeping, setSleeping] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const since = useRef<number | null>(null); // 졸음 시작 추정 시각
-  const last = useRef(0); // 마지막으로 졸음이 관측된 시각
+  const since = useRef<number | null>(null); // 엎드림 시작 시각
+  const last = useRef(0); // 마지막으로 엎드림이 관측된 시각
   const active = useRef(false);
   const device = useRef(deviceId);
   device.current = deviceId;
@@ -53,24 +51,26 @@ export function useSleep(frame: AnalysisFrame | null, deviceId: string) {
   );
 
   useEffect(() => {
-    // 분석 중지: 수면 중이었다면 마지막 관측 시각으로 종료 처리
     if (!frame) {
       if (active.current && since.current !== null) {
         finish(since.current, last.current);
       }
       since.current = null;
       active.current = false;
+      setProgress(0);
       return;
     }
 
     const now = Date.now();
-    if (isSleepy(frame)) {
+    if (isProne(frame)) {
       since.current ??= now;
       last.current = now;
-      if (!active.current && now - since.current >= SLEEP_MS) {
+      const p = Math.min(1, (now - since.current) / PRONE_MS);
+      setProgress(Math.round(p * 100) / 100);
+      if (!active.current && p >= 1) {
         active.current = true;
         setSleeping(true);
-        const msg = START_MESSAGES[Math.floor(Math.random() * START_MESSAGES.length)];
+        const msg = pickSleepStart();
         setToast(msg);
         notifyDesktop('수면 감지', msg);
         push('sleep-start');
@@ -79,6 +79,7 @@ export function useSleep(frame: AnalysisFrame | null, deviceId: string) {
       if (active.current) finish(since.current, last.current);
       since.current = null;
       active.current = false;
+      setProgress(0);
     }
   }, [frame, finish, push]);
 
@@ -90,5 +91,5 @@ export function useSleep(frame: AnalysisFrame | null, deviceId: string) {
 
   const dismiss = useCallback(() => setToast(null), []);
 
-  return { sleeping, toast, error, dismiss };
+  return { sleeping, progress, toast, error, dismiss };
 }
