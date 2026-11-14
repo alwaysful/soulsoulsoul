@@ -90,7 +90,8 @@ export class StudyService {
           stream: false,
           think: false,
           format: 'json',
-          options: { temperature: 0, num_predict: 200 },
+          keep_alive: '10m',
+          options: { temperature: 0, num_predict: 200, num_ctx: 4096 },
           messages: [
             { role: 'system', content: SYSTEM },
             { role: 'user', content: '이 화면을 분류해.', images: [image] },

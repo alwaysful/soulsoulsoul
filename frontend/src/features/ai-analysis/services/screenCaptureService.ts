@@ -1,4 +1,4 @@
-const MAX_WIDTH = 1280;
+const MAX_WIDTH = 1024;
 const QUALITY = 0.6;
 
 export interface ScreenSession {
