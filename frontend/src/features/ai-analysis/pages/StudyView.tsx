@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ErrorMessage } from '../../../components/ErrorMessage';
+import { ModelSelect } from '../components/ModelSelect';
 import { OverlayCanvas } from '../components/OverlayCanvas';
 import { PostureToast } from '../components/PostureToast';
 import { QuitBanner } from '../components/QuitBanner';
@@ -7,6 +8,7 @@ import { SleepGauge } from '../components/SleepGauge';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { useCoach } from '../hooks/useCoach';
 import { useQuitGuard } from '../hooks/useQuitGuard';
+import { useScreenModel } from '../hooks/useScreenModel';
 import { useScreenWatch } from '../hooks/useScreenWatch';
 import { useSleep } from '../hooks/useSleepGauge';
 import { pickPhoneMessage, pickSlackMessage, pickSleepStart } from '../lib/hints';
@@ -67,7 +69,8 @@ export function StudyPage() {
   const [recent, setRecent] = useState('');
   const coach = useCoach(frame, deviceId.trim());
   const sleep = useSleep(frame, deviceId.trim());
-  const screen = useScreenWatch();
+  const [model, setModel] = useScreenModel();
+  const screen = useScreenWatch(model);
   const running = status === 'running';
   const quit = useQuitGuard();
   const busy = running || screen.active;
@@ -248,13 +251,16 @@ export function StudyPage() {
             <ErrorMessage message={coach.pushError} />
             <ErrorMessage message={sleep.error} />
             <ErrorMessage message={screen.error} />
-            <button
-              type="button"
-              className="study-link"
-              onClick={() => setView('analysis')}
-            >
-              분석하기
-            </button>
+            <div className="study-links">
+              <ModelSelect value={model} onChange={setModel} />
+              <button
+                type="button"
+                className="study-link"
+                onClick={() => setView('analysis')}
+              >
+                분석하기
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -291,6 +297,7 @@ export function StudyPage() {
                 <button type="button" className="btn btn-primary" onClick={handleWatchNow}>
                   당장 감시
                 </button>
+                <ModelSelect value={model} onChange={setModel} />
                 <button type="button" className="btn btn-ghost" onClick={() => setView('user')}>
                   돌아가기
                 </button>

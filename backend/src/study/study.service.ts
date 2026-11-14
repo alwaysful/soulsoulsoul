@@ -70,7 +70,11 @@ export class StudyService {
     this.model = this.config.getOrThrow<string>('OLLAMA_MODEL');
   }
 
-  async check(userId: string, image: string): Promise<ScreenCheckResponseDto> {
+  async check(
+    userId: string,
+    image: string,
+    model?: string,
+  ): Promise<ScreenCheckResponseDto> {
     const now = Date.now();
     if (now - (this.lastCheck.get(userId) ?? 0) < COOLDOWN_MS) {
       throw new HttpException(
@@ -82,7 +86,7 @@ export class StudyService {
 
     let text: string;
     try {
-      text = await this.ask(image);
+      text = await this.ask(image, model);
     } catch (e) {
       this.lastCheck.delete(userId);
       this.logger.error(
@@ -94,12 +98,12 @@ export class StudyService {
     return this.toResult(this.parse(text));
   }
 
-  private async ask(image: string): Promise<string> {
+  private async ask(image: string, model?: string): Promise<string> {
     const res = await firstValueFrom(
       this.httpService.post<OllamaResponse>(
         `${this.baseUrl}/api/chat`,
         {
-          model: this.model,
+          model: model ?? this.model,
           stream: false,
           think: false,
           format: 'json',

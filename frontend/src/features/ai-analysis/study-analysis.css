@@ -66,6 +66,27 @@
   font-size: 1rem;
 }
 
+.model-select {
+  width: auto;
+  max-width: 100%;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+.study-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.study .model-select {
+  border-color: #2a2e3a;
+  background: #151821;
+  color: #e6e8ee;
+}
+
 @media (max-width: 720px) {
   .analysis-layout {
     grid-template-columns: minmax(0, 1fr);

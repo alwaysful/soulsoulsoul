@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { studyApi, type ScreenCheck } from '../../../api/study';
+import {
+  studyApi,
+  type ScreenCheck,
+  type ScreenModel,
+} from '../../../api/study';
 import { errorText } from '../../../components/format';
 import { notifyDesktop } from '../lib/notify';
 import { openScreen, type ScreenSession } from '../services/screenCaptureService';
@@ -8,7 +12,7 @@ const CAPTURE_MS = 30_000; // 캡처 간격
 const TOAST_COOLDOWN_MS = 60_000;
 const TOAST_MS = 8_000;
 
-export function useScreenWatch() {
+export function useScreenWatch(model: ScreenModel) {
   const [active, setActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -16,6 +20,9 @@ export function useScreenWatch() {
   const stopRef = useRef<(() => void) | null>(null);
   const tickRef = useRef<(() => Promise<void>) | null>(null);
   const aliveRef = useRef(true);
+  // 감시 도중 모델을 바꿔도 다음 캡처부터 바로 반영
+  const modelRef = useRef(model);
+  modelRef.current = model;
 
   const stop = useCallback(() => {
     stopRef.current?.();
@@ -50,7 +57,7 @@ export function useScreenWatch() {
       try {
         const image = session.capture();
         if (!image) return;
-        const res = await studyApi.screenCheck(image);
+        const res = await studyApi.screenCheck(image, modelRef.current);
         if (closed) return;
         setLast(res);
         const now = Date.now();

@@ -31,6 +31,6 @@ export class StudyController {
     @Req() req: { user: { userId: string } },
     @Body() body: ScreenCheckDto,
   ): Promise<ScreenCheckResponseDto> {
-    return this.study.check(req.user.userId, body.image);
+    return this.study.check(req.user.userId, body.image, body.model);
   }
 }
