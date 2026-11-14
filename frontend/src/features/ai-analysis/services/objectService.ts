@@ -1,6 +1,6 @@
 import { ObjectDetector } from '@mediapipe/tasks-vision';
 import type { DetectedObject, VisionService } from '../types';
-import { getVision } from './visionRuntime';
+import { getVision, withDelegateFallback } from './visionRuntime';
 
 // COCO 라벨 모델: 스마트폰 클래스명은 'cell phone'
 export const OBJECT_MODEL_URL = '/models/efficientdet_lite0.tflite';
@@ -10,12 +10,14 @@ export async function createObjectService(): Promise<
   VisionService<DetectedObject[]>
 > {
   const vision = await getVision();
-  const detector = await ObjectDetector.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: OBJECT_MODEL_URL, delegate: 'GPU' },
-    runningMode: 'VIDEO',
-    scoreThreshold: 0.4,
-    categoryAllowlist: TARGET_LABELS,
-  });
+  const detector = await withDelegateFallback((delegate) =>
+    ObjectDetector.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: OBJECT_MODEL_URL, delegate },
+      runningMode: 'VIDEO',
+      scoreThreshold: 0.4,
+      categoryAllowlist: TARGET_LABELS,
+    }),
+  );
 
   return {
     detect(video, timestamp) {

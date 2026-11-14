@@ -42,15 +42,7 @@ export class AuthController {
     return this.auth.login(body.email, body.password);
   }
 
-  @Post('oauth')
-  @ApiOperation({ summary: 'OAuth 사용자 로그인 (없으면 가입 후 JWT 발급)' })
-  @ApiCreatedResponse({ type: TokenResponseDto })
-  @ApiBadRequestResponse({ type: ErrorResponseDto })
-  @ApiConflictResponse({ type: ErrorResponseDto })
-  oauthLogin(@Body() oauthUser: OAuthUserDto): Promise<TokenResponseDto> {
-    return this.auth.oauthLogin(oauthUser);
-  }
-
+  // POST /auth/oauth 제거: 무인증으로 임의 provider/sub 를 넣어 JWT 를 받을 수 있었음
   @Get('infoteam')
   @ApiOperation({ summary: 'InfoTeam 로그인 페이지로 리다이렉트' })
   @ApiResponse({ status: 302, description: 'InfoTeam 로그인 페이지로 이동' })

@@ -1,6 +1,6 @@
 import { PoseLandmarker } from '@mediapipe/tasks-vision';
 import type { PoseResult, VisionService } from '../types';
-import { getVision } from './visionRuntime';
+import { getVision, withDelegateFallback } from './visionRuntime';
 
 export const POSE_MODEL_URL = '/models/pose_landmarker_lite.task';
 
@@ -8,11 +8,13 @@ export async function createPoseService(): Promise<
   VisionService<PoseResult | null>
 > {
   const vision = await getVision();
-  const landmarker = await PoseLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: POSE_MODEL_URL, delegate: 'GPU' },
-    runningMode: 'VIDEO',
-    numPoses: 1,
-  });
+  const landmarker = await withDelegateFallback((delegate) =>
+    PoseLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: POSE_MODEL_URL, delegate },
+      runningMode: 'VIDEO',
+      numPoses: 1,
+    }),
+  );
 
   return {
     detect(video, timestamp) {

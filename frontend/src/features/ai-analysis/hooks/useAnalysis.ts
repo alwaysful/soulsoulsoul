@@ -11,6 +11,7 @@ export function useAnalysis(videoRef: RefObject<HTMLVideoElement>) {
   const [error, setError] = useState<string | null>(null);
   const [frame, setFrame] = useState<AnalysisFrame | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
+  const aliveRef = useRef(true);
 
   const stop = useCallback(() => {
     stopRef.current?.();
@@ -46,6 +47,12 @@ export function useAnalysis(videoRef: RefObject<HTMLVideoElement>) {
       return;
     }
 
+    // 로딩 중 언마운트되면 카메라/모델이 남으므로 바로 정리
+    if (!aliveRef.current) {
+      cleanup();
+      return;
+    }
+
     const svc = service;
     stopRef.current = cleanup;
     setStatus('running');
@@ -57,13 +64,14 @@ export function useAnalysis(videoRef: RefObject<HTMLVideoElement>) {
     loop();
   }, [videoRef]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
       stopRef.current?.();
       stopRef.current = null;
-    },
-    [],
-  );
+    };
+  }, []);
 
   return { status, error, frame, start, stop };
 }
