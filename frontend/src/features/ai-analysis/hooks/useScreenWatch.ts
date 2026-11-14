@@ -14,6 +14,7 @@ export function useScreenWatch() {
   const [toast, setToast] = useState<string | null>(null);
   const [last, setLast] = useState<ScreenCheck | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
+  const tickRef = useRef<(() => Promise<void>) | null>(null);
   const aliveRef = useRef(true);
 
   const stop = useCallback(() => {
@@ -66,8 +67,10 @@ export function useScreenWatch() {
     };
 
     const timer = setInterval(() => void tick(), CAPTURE_MS);
+    tickRef.current = tick;
     stopRef.current = () => {
       closed = true;
+      tickRef.current = null;
       clearInterval(timer);
       session.close();
     };
@@ -93,6 +96,7 @@ export function useScreenWatch() {
   }, [toast]);
 
   const dismiss = useCallback(() => setToast(null), []);
+  const checkNow = useCallback(() => void tickRef.current?.(), []);
 
-  return { active, error, toast, last, start, stop, dismiss };
+  return { active, error, toast, last, start, stop, dismiss, checkNow };
 }

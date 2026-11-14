@@ -29,7 +29,9 @@ const SYSTEM = [
   'roast: 딴짓일 때만. 한국어 한 줄, 50자 이내, 재치 있게 꼽 주는 말투.',
   '예: "학점은 브론즈인데 게임은 다이아시네요." / "교수님이 주신 퀘스트부터 완료하시죠."',
   '공부면 roast는 빈 문자열.',
-  '출력은 JSON 한 개만: {"activity":"...","roast":"..."}',
+  'summary: 화면 상태 한국어 한 줄 요약, 40자 이내.',
+  'distractPct: 지금 딴짓 중일 확률 0~100 정수.',
+  '출력은 JSON 한 개만: {"activity":"...","distractPct":0,"summary":"...","roast":"..."}',
 ].join('\n');
 
 interface OllamaResponse {
@@ -37,6 +39,8 @@ interface OllamaResponse {
 }
 interface Verdict {
   activity?: unknown;
+  distractPct?: unknown;
+  summary?: unknown;
   roast?: unknown;
 }
 
@@ -91,7 +95,7 @@ export class StudyService {
           think: false,
           format: 'json',
           keep_alive: '10m',
-          options: { temperature: 0, num_predict: 200, num_ctx: 4096 },
+          options: { temperature: 0, num_predict: 300, num_ctx: 4096 },
           messages: [
             { role: 'system', content: SYSTEM },
             { role: 'user', content: '이 화면을 분류해.', images: [image] },
@@ -119,11 +123,21 @@ export class StudyService {
         ? v.activity
         : 'study';
     const distracted = activity !== 'study';
-    if (!distracted) return { distracted, activity, message: null };
+    const raw = Number(v.distractPct);
+    const distractPct = Number.isFinite(raw)
+      ? Math.min(100, Math.max(0, Math.round(raw)))
+      : distracted
+        ? 90
+        : 5;
+    const summary =
+      typeof v.summary === 'string' ? v.summary.trim().slice(0, 100) : '';
+    if (!distracted) {
+      return { distracted, activity, distractPct, summary, message: null };
+    }
 
     const roast = typeof v.roast === 'string' ? v.roast.trim().slice(0, 100) : '';
     const message =
       roast || FALLBACK_ROASTS[Math.floor(Math.random() * FALLBACK_ROASTS.length)];
-    return { distracted, activity, message };
+    return { distracted, activity, distractPct, summary, message };
   }
 }

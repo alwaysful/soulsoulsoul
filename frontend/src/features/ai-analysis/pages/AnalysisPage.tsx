@@ -62,9 +62,9 @@ export function AnalysisPage() {
     void start();
   };
 
-  const handleScreen = () => {
+  const handleWatchNow = () => {
     if (screen.active) {
-      quit.request();
+      screen.checkNow();
       return;
     }
     void requestDesktopPermission();
@@ -123,8 +123,8 @@ export function AnalysisPage() {
         >
           {status === 'loading' ? '준비 중' : '시작'}
         </button>
-        <button type="button" className="btn" disabled={!running} onClick={quit.request}>
-          중지
+        <button type="button" className="btn" disabled={!busy} onClick={quit.request}>
+          종료
         </button>
         <button
           type="button"
@@ -134,8 +134,8 @@ export function AnalysisPage() {
         >
           바른 자세로 기준 저장
         </button>
-        <button type="button" className="btn" onClick={handleScreen}>
-          {screen.active ? '화면 감시 중지' : '화면 감시 시작'}
+        <button type="button" className="btn btn-primary" onClick={handleWatchNow}>
+          당장 감시
         </button>
         {calibration && <span className="muted">{calibration}</span>}
       </div>
@@ -153,6 +153,15 @@ export function AnalysisPage() {
       <ErrorMessage message={coach.pushError} />
       <ErrorMessage message={sleep.error} />
       <ErrorMessage message={screen.error} />
+      {screen.active && (
+        <div className="analysis-screen">
+          <p>
+            딴짓 확률:{' '}
+            <strong>{screen.last ? `${screen.last.distractPct}%` : '분석 중'}</strong>
+          </p>
+          <p>화면 요약: {screen.last?.summary || '-'}</p>
+        </div>
+      )}
       {frame && (
         <ul className="analysis-list">
           <li>

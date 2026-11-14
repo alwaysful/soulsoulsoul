@@ -54,3 +54,12 @@
 .coach-toast p {
   margin: 0 0 8px;
 }
+
+.analysis-screen {
+  max-width: 640px;
+  margin-top: 16px;
+}
+
+.analysis-screen p {
+  margin: 0 0 4px;
+}

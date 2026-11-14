@@ -3,6 +3,8 @@ import { request } from './client';
 export interface ScreenCheck {
   distracted: boolean;
   activity: string;
+  distractPct: number;
+  summary: string;
   message: string | null;
 }
 
