@@ -2,7 +2,7 @@
 
 ## 구조
 - `frontend/` React + Vite
-- `BE/` NestJS (이동 예정 → `backend/src`)
+- `backend/src/` NestJS
 - `ai/` Python 예약
 - `prisma/` 스키마
 
