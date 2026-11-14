@@ -15,7 +15,7 @@ export function Layout() {
       <header className="topbar">
         <div className="topbar-inner">
           <Link to="/" className="brand">
-            술술술
+            T-GPT
           </Link>
           <nav className="topbar-nav">
             {user ? (
