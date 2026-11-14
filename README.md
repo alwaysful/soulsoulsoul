@@ -18,4 +18,4 @@ cd frontend && npm install && npm run dev
 - `efficientdet_lite0.tflite` (COCO, `cell phone` 클래스)
 
 웹캠 영상은 브라우저 안에서만 처리한다.
-화면 감시: 캡처 이미지는 분석을 위해 백엔드를 거쳐 Claude API 로 전송된다.
+화면 감시: 캡처 이미지는 백엔드를 거쳐 로컬 Ollama(Qwen3-VL 4B)로 전달된다. 외부로 나가지 않는다.

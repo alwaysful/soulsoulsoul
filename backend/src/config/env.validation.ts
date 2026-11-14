@@ -42,13 +42,13 @@ export class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   CORS_ORIGIN: string = 'http://localhost:5173';
 
-  // 화면 분석(Claude API). 비어 있으면 /study/screen-check 는 503
-  @IsString()
-  ANTHROPIC_API_KEY: string = '';
+  // 화면 분석: 로컬 Ollama (Qwen3-VL 4B)
+  @IsUrl({ require_tld: false })
+  OLLAMA_URL: string = 'http://localhost:11434';
 
   @IsString()
   @IsNotEmpty()
-  ANTHROPIC_MODEL: string = 'claude-haiku-5-5';
+  OLLAMA_MODEL: string = 'qwen3-vl:4b';
 }
 
 export function validateEnv(

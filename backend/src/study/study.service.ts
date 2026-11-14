@@ -10,9 +10,8 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { ScreenCheckResponseDto } from './dto/screen-check.dto';
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
 const COOLDOWN_MS = 5_000;
-const TIMEOUT_MS = 20_000;
+const TIMEOUT_MS = 90_000;
 const ACTIVITIES = ['study', 'game', 'video', 'sns', 'shopping', 'other'];
 const FALLBACK_ROASTS = [
   '학점은 브론즈인데 게임은 다이아시네요.',
@@ -33,8 +32,8 @@ const SYSTEM = [
   '출력은 JSON 한 개만: {"activity":"...","roast":"..."}',
 ].join('\n');
 
-interface ClaudeResponse {
-  content?: { type: string; text?: string }[];
+interface OllamaResponse {
+  message?: { content?: string };
 }
 interface Verdict {
   activity?: unknown;
@@ -44,7 +43,7 @@ interface Verdict {
 @Injectable()
 export class StudyService {
   private readonly logger = new Logger(StudyService.name);
-  private readonly apiKey: string;
+  private readonly baseUrl: string;
   private readonly model: string;
   private readonly lastCheck = new Map<string, number>();
 
@@ -52,14 +51,13 @@ export class StudyService {
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
   ) {
-    this.apiKey = this.config.get<string>('ANTHROPIC_API_KEY') ?? '';
-    this.model = this.config.getOrThrow<string>('ANTHROPIC_MODEL');
+    this.baseUrl = this.config
+      .getOrThrow<string>('OLLAMA_URL')
+      .replace(/\/$/, '');
+    this.model = this.config.getOrThrow<string>('OLLAMA_MODEL');
   }
 
   async check(userId: string, image: string): Promise<ScreenCheckResponseDto> {
-    if (!this.apiKey) {
-      throw new ServiceUnavailableException('화면 분석이 설정되지 않았습니다.');
-    }
     const now = Date.now();
     if (now - (this.lastCheck.get(userId) ?? 0) < COOLDOWN_MS) {
       throw new HttpException(
@@ -75,7 +73,7 @@ export class StudyService {
     } catch (e) {
       this.lastCheck.delete(userId);
       this.logger.error(
-        'Claude API 요청 실패',
+        'Ollama 요청 실패',
         e instanceof Error ? e.message : String(e),
       );
       throw new ServiceUnavailableException('화면 분석 서버와 통신할 수 없습니다.');
@@ -85,36 +83,23 @@ export class StudyService {
 
   private async ask(image: string): Promise<string> {
     const res = await firstValueFrom(
-      this.httpService.post<ClaudeResponse>(
-        API_URL,
+      this.httpService.post<OllamaResponse>(
+        `${this.baseUrl}/api/chat`,
         {
           model: this.model,
-          max_tokens: 200,
-          system: SYSTEM,
+          stream: false,
+          think: false,
+          format: 'json',
+          options: { temperature: 0, num_predict: 200 },
           messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: { type: 'base64', media_type: 'image/jpeg', data: image },
-                },
-                { type: 'text', text: '이 화면을 분류해.' },
-              ],
-            },
+            { role: 'system', content: SYSTEM },
+            { role: 'user', content: '이 화면을 분류해.', images: [image] },
           ],
         },
-        {
-          headers: {
-            'x-api-key': this.apiKey,
-            'anthropic-version': '2023-06-01',
-            'content-type': 'application/json',
-          },
-          timeout: TIMEOUT_MS,
-        },
+        { timeout: TIMEOUT_MS },
       ),
     );
-    return res.data.content?.find((c) => c.type === 'text')?.text ?? '';
+    return res.data.message?.content ?? '';
   }
 
   private parse(text: string): Verdict {
