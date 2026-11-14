@@ -15,6 +15,7 @@ export function useAnalysis(videoRef: RefObject<HTMLVideoElement>) {
   const stop = useCallback(() => {
     stopRef.current?.();
     stopRef.current = null;
+    setFrame(null);
     setStatus('idle');
   }, []);
 

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { ErrorMessage } from '../../../components/ErrorMessage';
+import { OverlayCanvas } from '../components/OverlayCanvas';
 import { useAnalysis } from '../hooks/useAnalysis';
 import '../analysis.css';
 
@@ -21,7 +22,10 @@ export function AnalysisPage() {
   return (
     <section>
       <h1>자세 · 스마트폰 분석</h1>
-      <video ref={videoRef} className="analysis-video" muted playsInline />
+      <div className="analysis-stage">
+        <video ref={videoRef} className="analysis-video" muted playsInline />
+        <OverlayCanvas frame={frame} video={videoRef.current} />
+      </div>
       <ErrorMessage message={error} />
       <div className="row">
         <button
