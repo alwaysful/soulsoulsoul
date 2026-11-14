@@ -1,0 +1,339 @@
+diff --git a/backend/src/category/category.controller.ts b/backend/src/category/category.controller.ts
+new file mode 100644
+index 0000000..feae002
+--- /dev/null
++++ b/backend/src/category/category.controller.ts
+@@ -0,0 +1,31 @@
++import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
++import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
++import { IsNotEmpty, IsString } from 'class-validator';
++import { JwtGuard } from '../auth/jwt.guard';
++import { CategoryService } from './category.service';
++
++class CreateCategoryDto {
++  @IsString()
++  @IsNotEmpty()
++  name!: string;
++}
++
++@ApiTags('category')
++@Controller('category')
++export class CategoryController {
++  constructor(private readonly category: CategoryService) {}
++
++  @Get()
++  @ApiOperation({ summary: '카테고리 목록' })
++  list() {
++    return this.category.list();
++  }
++
++  @Post()
++  @ApiBearerAuth()
++  @UseGuards(JwtGuard)
++  @ApiOperation({ summary: '카테고리 생성' })
++  create(@Body() body: CreateCategoryDto) {
++    return this.category.create(body.name);
++  }
++}
+diff --git a/backend/src/category/category.module.ts b/backend/src/category/category.module.ts
+new file mode 100644
+index 0000000..b4186af
+--- /dev/null
++++ b/backend/src/category/category.module.ts
+@@ -0,0 +1,11 @@
++import { Module } from '@nestjs/common';
++import { PrismaModule } from '../../../prisma/prisma.module';
++import { CategoryController } from './category.controller';
++import { CategoryService } from './category.service';
++
++@Module({
++  imports: [PrismaModule],
++  controllers: [CategoryController],
++  providers: [CategoryService],
++})
++export class CategoryModule {}
+diff --git a/backend/src/category/category.service.ts b/backend/src/category/category.service.ts
+new file mode 100644
+index 0000000..25842a2
+--- /dev/null
++++ b/backend/src/category/category.service.ts
+@@ -0,0 +1,15 @@
++import { Injectable } from '@nestjs/common';
++import { PrismaService } from '../../../prisma/prisma.service';
++
++@Injectable()
++export class CategoryService {
++  constructor(private readonly prisma: PrismaService) {}
++
++  list() {
++    return this.prisma.category.findMany({ orderBy: { id: 'asc' } });
++  }
++
++  create(name: string) {
++    return this.prisma.category.create({ data: { name } });
++  }
++}
+diff --git a/backend/src/post/dto/post.dto.ts b/backend/src/post/dto/post.dto.ts
+new file mode 100644
+index 0000000..96624c1
+--- /dev/null
++++ b/backend/src/post/dto/post.dto.ts
+@@ -0,0 +1,50 @@
++import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
++import { Type } from 'class-transformer';
++import {
++  IsInt,
++  IsNotEmpty,
++  IsOptional,
++  IsString,
++  Max,
++  Min,
++} from 'class-validator';
++
++export class PostQueryDto {
++  @ApiPropertyOptional({ default: 1 })
++  @IsOptional()
++  @Type(() => Number)
++  @IsInt()
++  @Min(1)
++  page: number = 1;
++
++  @ApiPropertyOptional({ default: 10 })
++  @IsOptional()
++  @Type(() => Number)
++  @IsInt()
++  @Min(1)
++  @Max(100)
++  limit: number = 10;
++
++  @ApiPropertyOptional()
++  @IsOptional()
++  @Type(() => Number)
++  @IsInt()
++  categoryId?: number;
++}
++
++export class PostInputDto {
++  @ApiProperty()
++  @IsString()
++  @IsNotEmpty()
++  title!: string;
++
++  @ApiProperty()
++  @IsString()
++  @IsNotEmpty()
++  content!: string;
++
++  @ApiPropertyOptional()
++  @IsOptional()
++  @IsInt()
++  categoryId?: number;
++}
+diff --git a/backend/src/post/post.controller.ts b/backend/src/post/post.controller.ts
+new file mode 100644
+index 0000000..8e29e98
+--- /dev/null
++++ b/backend/src/post/post.controller.ts
+@@ -0,0 +1,65 @@
++import {
++  Body,
++  Controller,
++  Delete,
++  Get,
++  Param,
++  ParseIntPipe,
++  Post,
++  Put,
++  Query,
++  Req,
++  UseGuards,
++} from '@nestjs/common';
++import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
++import { JwtGuard } from '../auth/jwt.guard';
++import { PostInputDto, PostQueryDto } from './dto/post.dto';
++import { PostService } from './post.service';
++
++type Req_ = { user: { userId: string } };
++
++@ApiTags('post')
++@Controller('post')
++export class PostController {
++  constructor(private readonly posts: PostService) {}
++
++  @Get()
++  @ApiOperation({ summary: '글 목록' })
++  list(@Query() q: PostQueryDto) {
++    return this.posts.list(q);
++  }
++
++  @Get(':id')
++  @ApiOperation({ summary: '글 상세' })
++  get(@Param('id', ParseIntPipe) id: number) {
++    return this.posts.get(id);
++  }
++
++  @Post()
++  @ApiBearerAuth()
++  @UseGuards(JwtGuard)
++  @ApiOperation({ summary: '글 작성' })
++  create(@Req() req: Req_, @Body() body: PostInputDto) {
++    return this.posts.create(req.user.userId, body);
++  }
++
++  @Put(':id')
++  @ApiBearerAuth()
++  @UseGuards(JwtGuard)
++  @ApiOperation({ summary: '글 수정' })
++  update(
++    @Req() req: Req_,
++    @Param('id', ParseIntPipe) id: number,
++    @Body() body: PostInputDto,
++  ) {
++    return this.posts.update(req.user.userId, id, body);
++  }
++
++  @Delete(':id')
++  @ApiBearerAuth()
++  @UseGuards(JwtGuard)
++  @ApiOperation({ summary: '글 삭제' })
++  remove(@Req() req: Req_, @Param('id', ParseIntPipe) id: number) {
++    return this.posts.remove(req.user.userId, id);
++  }
++}
+diff --git a/backend/src/post/post.module.ts b/backend/src/post/post.module.ts
+new file mode 100644
+index 0000000..505b1d2
+--- /dev/null
++++ b/backend/src/post/post.module.ts
+@@ -0,0 +1,11 @@
++import { Module } from '@nestjs/common';
++import { PrismaModule } from '../../../prisma/prisma.module';
++import { PostController } from './post.controller';
++import { PostService } from './post.service';
++
++@Module({
++  imports: [PrismaModule],
++  controllers: [PostController],
++  providers: [PostService],
++})
++export class PostModule {}
+diff --git a/backend/src/post/post.service.ts b/backend/src/post/post.service.ts
+new file mode 100644
+index 0000000..2856618
+--- /dev/null
++++ b/backend/src/post/post.service.ts
+@@ -0,0 +1,77 @@
++import {
++  ForbiddenException,
++  Injectable,
++  NotFoundException,
++} from '@nestjs/common';
++import { PrismaService } from '../../../prisma/prisma.service';
++import { PostInputDto, PostQueryDto } from './dto/post.dto';
++
++const INCLUDE = {
++  category: true,
++  author: { select: { id: true, email: true, username: true } },
++} as const;
++
++@Injectable()
++export class PostService {
++  constructor(private readonly prisma: PrismaService) {}
++
++  async list(q: PostQueryDto) {
++    const where = q.categoryId ? { categoryId: q.categoryId } : {};
++    const [items, totalCount] = await Promise.all([
++      this.prisma.post.findMany({
++        where,
++        include: INCLUDE,
++        orderBy: { createdAt: 'desc' },
++        skip: (q.page - 1) * q.limit,
++        take: q.limit,
++      }),
++      this.prisma.post.count({ where }),
++    ]);
++    return {
++      items,
++      pagination: {
++        page: q.page,
++        limit: q.limit,
++        totalCount,
++        totalPages: Math.max(1, Math.ceil(totalCount / q.limit)),
++      },
++    };
++  }
++
++  async get(id: number) {
++    const post = await this.prisma.post.findUnique({
++      where: { id },
++      include: INCLUDE,
++    });
++    if (!post) throw new NotFoundException('글을 찾을 수 없습니다.');
++    return post;
++  }
++
++  create(userId: string, dto: PostInputDto) {
++    return this.prisma.post.create({
++      data: { ...dto, authorId: userId },
++      include: INCLUDE,
++    });
++  }
++
++  async update(userId: string, id: number, dto: PostInputDto) {
++    await this.own(userId, id);
++    return this.prisma.post.update({
++      where: { id },
++      data: { title: dto.title, content: dto.content, categoryId: dto.categoryId ?? null },
++      include: INCLUDE,
++    });
++  }
++
++  async remove(userId: string, id: number): Promise<void> {
++    await this.own(userId, id);
++    await this.prisma.post.delete({ where: { id } });
++  }
++
++  private async own(userId: string, id: number): Promise<void> {
++    const post = await this.get(id);
++    if (post.authorId && post.authorId !== userId) {
++      throw new ForbiddenException('권한이 없습니다.');
++    }
++  }
++}
+diff --git a/prisma/prisma.module.ts b/prisma/prisma.module.ts
+new file mode 100644
+index 0000000..7207426
+--- /dev/null
++++ b/prisma/prisma.module.ts
+@@ -0,0 +1,9 @@
++import { Global, Module } from '@nestjs/common';
++import { PrismaService } from './prisma.service';
++
++@Global()
++@Module({
++  providers: [PrismaService],
++  exports: [PrismaService],
++})
++export class PrismaModule {}
+diff --git a/prisma/prisma.service.ts b/prisma/prisma.service.ts
+new file mode 100644
+index 0000000..f80a886
+--- /dev/null
++++ b/prisma/prisma.service.ts
+@@ -0,0 +1,16 @@
++import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
++import { PrismaClient } from '@prisma/client';
++
++@Injectable()
++export class PrismaService
++  extends PrismaClient
++  implements OnModuleInit, OnModuleDestroy
++{
++  async onModuleInit(): Promise<void> {
++    await this.$connect();
++  }
++
++  async onModuleDestroy(): Promise<void> {
++    await this.$disconnect();
++  }
++}
