@@ -14,7 +14,7 @@ export async function createObjectService(): Promise<
     ObjectDetector.createFromOptions(vision, {
       baseOptions: { modelAssetPath: OBJECT_MODEL_URL, delegate },
       runningMode: 'VIDEO',
-      scoreThreshold: 0.4,
+      scoreThreshold: 0.15,
       categoryAllowlist: TARGET_LABELS,
     }),
   );

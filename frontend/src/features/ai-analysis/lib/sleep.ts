@@ -30,3 +30,23 @@ export function formatDuration(sec: number): string {
   const m = Math.floor((sec % 3600) / 60);
   return [h, m, sec % 60].map((n) => String(n).padStart(2, '0')).join(':');
 }
+
+// 졸음 지수 0~100: 눈 감김 / 고개 숙임 중 큰 값
+export function sleepScore(frame: AnalysisFrame): number {
+  const eye = Math.min(1, (frame.face?.eyeBlink ?? 0) / EYES_CLOSED);
+  let head = 0;
+  const lm = frame.pose?.landmarks;
+  if (lm) {
+    const nose = lm[0];
+    const ls = lm[11];
+    const rs = lm[12];
+    if (seen(nose) && seen(ls) && seen(rs)) {
+      const width = Math.hypot(ls.x - rs.x, ls.y - rs.y);
+      if (width >= 0.05) {
+        const ratio = ((ls.y + rs.y) / 2 - nose.y) / width;
+        head = Math.min(1, Math.max(0, (0.6 - ratio) / (0.6 - HEAD_DOWN)));
+      }
+    }
+  }
+  return Math.round(Math.max(eye, head) * 100);
+}

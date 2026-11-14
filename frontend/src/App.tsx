@@ -1,7 +1,7 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './layouts/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { AnalysisPage } from './features/ai-analysis/pages/AnalysisPage';
+import { StudyPage } from './features/ai-analysis/pages/StudyPage';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PostDetailPage } from './features/posts/pages/PostDetailPage';
@@ -18,7 +18,8 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="posts/new" element={<PostFormPage />} />
           <Route path="posts/:id/edit" element={<PostFormPage />} />
-          <Route path="analysis" element={<AnalysisPage />} />
+          <Route path="study" element={<StudyPage />} />
+          <Route path="analysis" element={<Navigate to="/study" replace />} />
         </Route>
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
