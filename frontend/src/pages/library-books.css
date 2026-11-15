@@ -1,0 +1,28 @@
+.lb-reco {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lb-h {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.lb-reason {
+  color: var(--accent);
+  font-size: 0.88rem;
+}
+
+.lb-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.lb-ok {
+  color: var(--accent);
+}
+
+.lb-no {
+  color: var(--danger);
+}

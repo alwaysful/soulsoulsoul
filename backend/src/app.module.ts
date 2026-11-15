@@ -7,6 +7,7 @@ import { validateEnv } from './config/env.validation';
 import { NotificationModule } from './notification/notification.module';
 import { SleepModule } from './sleep/sleep.module';
 import { StudyModule } from './study/study.module';
+import { LibraryModule } from './library/library.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StudyModule } from './study/study.module';
     NotificationModule,
     SleepModule,
     StudyModule,
+    LibraryModule,
   ],
   controllers: [AppController],
 })

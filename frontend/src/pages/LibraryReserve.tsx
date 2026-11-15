@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './library-reserve.css';
+import { BookSearch } from './LibraryBooks';
 import { LibraryPanel as BasePanel } from './LibraryPanels';
 
 interface Room {
@@ -240,7 +241,7 @@ interface Props {
 }
 
 export function LibraryPanel({ kind, onClose }: Props) {
-  if (kind !== '열람실 좌석' && kind !== '스터디룸') {
+  if (!['열람실 좌석', '스터디룸', '자료 검색'].includes(kind)) {
     return <BasePanel kind={kind} onClose={onClose} />;
   }
   return (
@@ -251,7 +252,13 @@ export function LibraryPanel({ kind, onClose }: Props) {
           닫기
         </button>
       </div>
-      {kind === '열람실 좌석' ? <SeatFinder /> : <RoomBooking />}
+      {kind === '열람실 좌석' ? (
+        <SeatFinder />
+      ) : kind === '스터디룸' ? (
+        <RoomBooking />
+      ) : (
+        <BookSearch />
+      )}
     </div>
   );
 }
