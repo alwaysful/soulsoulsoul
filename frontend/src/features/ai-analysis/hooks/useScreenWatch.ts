@@ -6,7 +6,6 @@ import { openScreen, type ScreenSession } from '../services/screenCaptureService
 
 const CAPTURE_MS = 30_000; // 캡처 간격
 const TOAST_COOLDOWN_MS = 60_000;
-const TOAST_MS = 8_000;
 
 export function useScreenWatch() {
   const [active, setActive] = useState(false);
@@ -88,12 +87,6 @@ export function useScreenWatch() {
       stopRef.current = null;
     };
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const dismiss = useCallback(() => setToast(null), []);
   const checkNow = useCallback(() => void tickRef.current?.(), []);

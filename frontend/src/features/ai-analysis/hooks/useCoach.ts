@@ -16,7 +16,6 @@ const PHONE_SCORE = 0.4; // 푸시 발송 기준 (표시 기준 15% 와 별개)
 const GRACE_MS = 2_000; // 감지 끊김 허용 시간
 const TOAST_COOLDOWN_MS = 60_000;
 const PUSH_COOLDOWN_MS = 120_000;
-const TOAST_MS = 6_000;
 
 interface Hold {
   since: number | null;
@@ -91,12 +90,6 @@ export function useCoach(frame: AnalysisFrame | null, deviceId: string) {
         .catch((e: unknown) => setPushError(errorText(e)));
     }
   }, [frame, posture]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const calibrate = useCallback((): boolean => {
     const r = ratio.current;

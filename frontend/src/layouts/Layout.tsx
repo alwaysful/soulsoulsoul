@@ -18,6 +18,9 @@ export function Layout() {
             T-GPT
           </Link>
           <nav className="topbar-nav">
+            <Link to="/study" className="btn btn-primary">
+              공부
+            </Link>
             {user ? (
               <>
                 <span className="muted">{user.email}</span>

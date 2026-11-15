@@ -71,12 +71,8 @@ export function StudyPage() {
   const running = status === 'running';
   const quit = useQuitGuard();
   const busy = running || screen.active;
-  // OS 알림 허용 시 사이트 내 팝업은 숨긴다 (미리보기 제외)
-  const osNotify =
-    typeof Notification !== 'undefined' && Notification.permission === 'granted';
-  const siteToast = osNotify
-    ? null
-    : (quit.toast ?? coach.toast ?? sleep.toast ?? screen.toast);
+  // 알림은 사용자가 확인을 눌러야 사라진다
+  const siteToast = quit.toast ?? coach.toast ?? sleep.toast ?? screen.toast;
 
   const values: Record<(typeof CHIPS)[number]['key'], number> = {
     posture: coach.posture?.turtlePct ?? 0,

@@ -4,13 +4,14 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { StudyPage } from './features/ai-analysis/pages/StudyView';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { LibraryPage } from './pages/LibraryPage';
 import { SignupPage } from './features/auth/pages/SignupPage';
 
 export function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/study" replace />} />
+        <Route index element={<LibraryPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="study" element={<StudyPage />} />
           <Route path="analysis" element={<Navigate to="/study" replace />} />

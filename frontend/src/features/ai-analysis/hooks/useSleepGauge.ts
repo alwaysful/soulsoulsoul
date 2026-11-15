@@ -9,7 +9,6 @@ import { formatDuration } from '../lib/sleep';
 import type { AnalysisFrame } from '../types';
 
 const WAKE_GRACE_MS = 5_000; // 이 시간 이상 안 엎드려 있으면 기상/게이지 초기화
-const TOAST_MS = 8_000;
 
 // 엎드림이 PRONE_MS 지속되면 수면. progress 는 0~1 게이지 값.
 export function useSleep(frame: AnalysisFrame | null, deviceId: string) {
@@ -82,12 +81,6 @@ export function useSleep(frame: AnalysisFrame | null, deviceId: string) {
       setProgress(0);
     }
   }, [frame, finish, push]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const dismiss = useCallback(() => setToast(null), []);
 

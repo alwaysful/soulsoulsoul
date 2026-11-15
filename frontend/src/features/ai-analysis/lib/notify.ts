@@ -13,7 +13,12 @@ export function notifyDesktop(title: string, body: string): void {
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'granted') return;
   try {
-    new Notification(title, { body, silent: true });
+    // 사용자가 직접 닫을 때까지 유지
+    new Notification(title, {
+      body,
+      silent: true,
+      requireInteraction: true,
+    } as NotificationOptions);
   } catch {
     /* 무시 */
   }

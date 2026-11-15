@@ -5,7 +5,6 @@ import { QUIT_DONE, QUIT_PROMPT, pickQuitMessage } from '../lib/quitMessages';
 export const QUIT_TOTAL_MS = 5 * 60_000;
 // 단계별 알림 간격: 갈수록 잦아진다
 const INTERVALS_MS = [60_000, 40_000, 20_000, 10_000];
-const TOAST_MS = 6_000;
 
 export type QuitPhase = 'idle' | 'counting' | 'ready';
 
@@ -58,12 +57,6 @@ export function useQuitGuard() {
     }, 1000);
     return () => clearInterval(id);
   }, [phase]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const dismiss = useCallback(() => setToast(null), []);
 
