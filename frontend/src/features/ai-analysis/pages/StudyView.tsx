@@ -15,6 +15,7 @@ import { useSleep } from '../hooks/useSleepGauge';
 import { pickPhoneMessage, pickSlackMessage, pickSleepStart } from '../lib/hints';
 import { pickTurtleMessage } from '../lib/messages';
 import { requestDesktopPermission } from '../lib/notify';
+import { closeAlertWindow, showAlertWindow } from '../lib/pipAlert';
 import { pickQuitMessage } from '../lib/quitMessages';
 import '../analysis.css';
 import '../study.css';
@@ -115,6 +116,10 @@ export function StudyPage() {
   useEffect(() => {
     if (!busy) rest.end();
   }, [busy, rest.end]);
+
+  useEffect(() => {
+    if (!busy) closeAlertWindow();
+  }, [busy]);
 
   useEffect(() => {
     if (!busy) {
@@ -356,7 +361,11 @@ export function StudyPage() {
                       key={h.label}
                       type="button"
                       className="btn"
-                      onClick={() => setPreview(h.get())}
+                      onClick={() => {
+                        const msg = h.get();
+                        setPreview(msg);
+                        showAlertWindow(h.label, msg);
+                      }}
                     >
                       {h.label}
                     </button>
