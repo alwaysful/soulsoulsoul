@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorMessage } from '../../../components/ErrorMessage';
+import { BreakButtons, BreakGauge } from '../components/BreakGauge';
 import { OverlayCanvas } from '../components/OverlayCanvas';
 import { PostureToast } from '../components/PostureToast';
 import { QuitBanner } from '../components/QuitBanner';
 import { SleepGauge } from '../components/SleepGauge';
 import { useAnalysis } from '../hooks/useAnalysis';
+import { useBreak } from '../hooks/useBreak';
 import { useCoach } from '../hooks/useCoach';
 import { useQuitGuard } from '../hooks/useQuitGuard';
 import { useScreenWatch } from '../hooks/useScreenWatch';
@@ -67,27 +69,32 @@ export function StudyPage() {
   const [roasts, setRoasts] = useState(0);
   const [recent, setRecent] = useState('');
   const phoneSeenAt = useRef(0);
-  const coach = useCoach(frame, deviceId.trim());
-  const sleep = useSleep(frame, deviceId.trim());
-  const screen = useScreenWatch();
+  const rest = useBreak();
+  // 휴식 중에는 분석 결과를 비운다
+  const live = rest.active ? null : frame;
+  const coach = useCoach(live, deviceId.trim());
+  const sleep = useSleep(live, deviceId.trim());
+  const screen = useScreenWatch(rest.active);
   const running = status === 'running';
   const quit = useQuitGuard();
   const busy = running || screen.active;
   // 알림은 사용자가 확인을 눌러야 사라진다
-  const siteToast = quit.toast ?? coach.toast ?? sleep.toast ?? screen.toast;
+  const siteToast =
+    quit.toast ?? rest.toast ?? coach.toast ?? sleep.toast ?? screen.toast;
 
   // 휴대폰은 한 번 감지되면 PHONE_HOLD_MS 동안 사용 중으로 유지
   const phoneRaw = Math.round(
-    Math.max(0, ...(frame?.objects.map((o) => o.score) ?? [])) * 100,
+    Math.max(0, ...(live?.objects.map((o) => o.score) ?? [])) * 100,
   );
   const phoneLimit = CHIPS[1].limit;
   if (phoneRaw >= phoneLimit) phoneSeenAt.current = Date.now();
-  const phoneHeld = Date.now() - phoneSeenAt.current < PHONE_HOLD_MS;
+  const phoneHeld =
+    !rest.active && Date.now() - phoneSeenAt.current < PHONE_HOLD_MS;
 
   const values: Record<(typeof CHIPS)[number]['key'], number> = {
     posture: coach.posture?.turtlePct ?? 0,
     phone: phoneHeld ? Math.max(phoneRaw, phoneLimit) : phoneRaw,
-    slack: screen.last?.distractPct ?? 0,
+    slack: rest.active ? 0 : (screen.last?.distractPct ?? 0),
     // 엎드림 10초 유지 시 수면 판정 (분석 화면과 동일)
     sleep: sleep.sleeping ? 100 : Math.round(sleep.progress * 100),
   };
@@ -104,6 +111,10 @@ export function StudyPage() {
   useEffect(() => {
     if (!busy) quit.reset();
   }, [busy, quit.reset]);
+
+  useEffect(() => {
+    if (!busy) rest.end();
+  }, [busy, rest.end]);
 
   useEffect(() => {
     if (!busy) {
@@ -192,6 +203,7 @@ export function StudyPage() {
           sleep.dismiss();
           screen.dismiss();
           quit.dismiss();
+          rest.dismiss();
         }}
       />
 
@@ -208,9 +220,9 @@ export function StudyPage() {
 
         {view === 'user' ? (
           <div className="study">
-            <span className={busy ? 'study-pill on' : 'study-pill'}>
+            <span className={busy && !rest.active ? 'study-pill on' : 'study-pill'}>
               <i className="study-dot" />
-              {busy ? '감시 중' : '감시 꺼짐'}
+              {busy ? (rest.active ? '휴식 중' : '감시 중') : '감시 꺼짐'}
             </span>
             {busy ? (
               <>
@@ -218,6 +230,11 @@ export function StudyPage() {
                 <p className="study-sub">
                   오늘 꼽 먹은 횟수 {roasts}회{recent && ` · 최근: ${recent}`}
                 </p>
+                {rest.active ? (
+                  <BreakGauge remainingMs={rest.remainingMs} totalMs={rest.totalMs} />
+                ) : (
+                  <BreakButtons onStart={rest.start} />
+                )}
                 <button
                   type="button"
                   className="study-main stop"
@@ -310,8 +327,21 @@ export function StudyPage() {
                 >
                   바른 자세로 기준 저장
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleWatchNow}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={rest.active}
+                  onClick={handleWatchNow}
+                >
                   당장 감시
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={!rest.active}
+                  onClick={rest.end}
+                >
+                  휴식 종료
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => setView('user')}>
                   돌아가기
@@ -351,6 +381,7 @@ export function StudyPage() {
 
             <aside className="analysis-right">
               <h2>분석 결과</h2>
+              <BreakGauge remainingMs={rest.remainingMs} totalMs={rest.totalMs} />
               <SleepGauge progress={sleep.progress} sleeping={sleep.sleeping} />
               {screen.active && (
                 <div className="analysis-screen">

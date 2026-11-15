@@ -7,7 +7,7 @@ import { openScreen, type ScreenSession } from '../services/screenCaptureService
 const CAPTURE_MS = 30_000; // 캡처 간격
 const TOAST_COOLDOWN_MS = 60_000;
 
-export function useScreenWatch() {
+export function useScreenWatch(paused = false) {
   const [active, setActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -15,6 +15,8 @@ export function useScreenWatch() {
   const stopRef = useRef<(() => void) | null>(null);
   const tickRef = useRef<(() => Promise<void>) | null>(null);
   const aliveRef = useRef(true);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   const stop = useCallback(() => {
     stopRef.current?.();
@@ -44,13 +46,13 @@ export function useScreenWatch() {
     let lastToast = 0;
 
     const tick = async () => {
-      if (busy || closed) return;
+      if (busy || closed || pausedRef.current) return;
       busy = true;
       try {
         const image = session.capture();
         if (!image) return;
         const res = await studyApi.screenCheck(image);
-        if (closed) return;
+        if (closed || pausedRef.current) return;
         setLast(res);
         const now = Date.now();
         if (res.distracted && res.message && now - lastToast >= TOAST_COOLDOWN_MS) {
