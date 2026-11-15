@@ -11,7 +11,6 @@ export type QuitPhase = 'idle' | 'counting' | 'ready';
 export function useQuitGuard() {
   const [phase, setPhase] = useState<QuitPhase>('idle');
   const [remainingMs, setRemainingMs] = useState(QUIT_TOTAL_MS);
-  const [toast, setToast] = useState<string | null>(null);
   const endAt = useRef(0);
   const nextAlarm = useRef(0);
 
@@ -22,13 +21,11 @@ export function useQuitGuard() {
     nextAlarm.current = now + INTERVALS_MS[0];
     setRemainingMs(QUIT_TOTAL_MS);
     setPhase('counting');
-    setToast(QUIT_PROMPT);
     notifyDesktop('종료 보류', QUIT_PROMPT);
   }, [phase]);
 
   const reset = useCallback(() => {
     setPhase('idle');
-    setToast(null);
   }, []);
 
   useEffect(() => {
@@ -39,7 +36,6 @@ export function useQuitGuard() {
       if (left <= 0) {
         setRemainingMs(0);
         setPhase('ready');
-        setToast(QUIT_DONE);
         notifyDesktop('종료 가능', QUIT_DONE);
         return;
       }
@@ -50,7 +46,6 @@ export function useQuitGuard() {
           Math.floor((1 - left / QUIT_TOTAL_MS) * INTERVALS_MS.length),
         );
         const msg = pickQuitMessage(level);
-        setToast(msg);
         notifyDesktop('종료 보류', msg);
         nextAlarm.current = now + INTERVALS_MS[level];
       }
@@ -58,7 +53,5 @@ export function useQuitGuard() {
     return () => clearInterval(id);
   }, [phase]);
 
-  const dismiss = useCallback(() => setToast(null), []);
-
-  return { phase, remainingMs, toast, request, reset, dismiss };
+  return { phase, remainingMs, request, reset };
 }

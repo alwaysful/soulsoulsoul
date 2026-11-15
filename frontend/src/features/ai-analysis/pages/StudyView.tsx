@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ErrorMessage } from '../../../components/ErrorMessage';
 import { BreakButtons, BreakGauge } from '../components/BreakGauge';
 import { OverlayCanvas } from '../components/OverlayCanvas';
-import { PostureToast } from '../components/PostureToast';
 import { QuitBanner } from '../components/QuitBanner';
 import { SleepGauge } from '../components/SleepGauge';
 import { useAnalysis } from '../hooks/useAnalysis';
@@ -65,7 +64,6 @@ export function StudyPage() {
   const [view, setView] = useState<'user' | 'analysis'>('user');
   const [deviceId, setDeviceId] = useState(loadDeviceId);
   const [calibration, setCalibration] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [roasts, setRoasts] = useState(0);
   const [recent, setRecent] = useState('');
@@ -79,9 +77,6 @@ export function StudyPage() {
   const running = status === 'running';
   const quit = useQuitGuard();
   const busy = running || screen.active;
-  // 알림은 사용자가 확인을 눌러야 사라진다
-  const siteToast =
-    quit.toast ?? rest.toast ?? coach.toast ?? sleep.toast ?? screen.toast;
 
   // 휴대폰은 한 번 감지되면 PHONE_HOLD_MS 동안 사용 중으로 유지
   const phoneRaw = Math.round(
@@ -136,17 +131,20 @@ export function StudyPage() {
     if (!coach.toast) return;
     setRoasts((n) => n + 1);
     setRecent(coach.toast);
-  }, [coach.toast]);
+    coach.dismiss();
+  }, [coach.toast, coach.dismiss]);
   useEffect(() => {
     if (!sleep.toast) return;
     setRoasts((n) => n + 1);
     setRecent(sleep.toast);
-  }, [sleep.toast]);
+    sleep.dismiss();
+  }, [sleep.toast, sleep.dismiss]);
   useEffect(() => {
     if (!screen.toast) return;
     setRoasts((n) => n + 1);
     setRecent(screen.toast);
-  }, [screen.toast]);
+    screen.dismiss();
+  }, [screen.toast, screen.dismiss]);
 
   // 공부 중 탭 닫기도 한 번 막는다
   useEffect(() => {
@@ -199,17 +197,6 @@ export function StudyPage() {
         remainingMs={quit.remainingMs}
         onCancel={quit.reset}
         onQuit={confirmQuit}
-      />
-      <PostureToast
-        message={preview ?? siteToast}
-        onClose={() => {
-          setPreview(null);
-          coach.dismiss();
-          sleep.dismiss();
-          screen.dismiss();
-          quit.dismiss();
-          rest.dismiss();
-        }}
       />
 
       <div className={view === 'analysis' ? 'analysis-layout' : undefined}>
@@ -363,7 +350,6 @@ export function StudyPage() {
                       className="btn"
                       onClick={() => {
                         const msg = h.get();
-                        setPreview(msg);
                         showAlertWindow(h.label, msg);
                       }}
                     >

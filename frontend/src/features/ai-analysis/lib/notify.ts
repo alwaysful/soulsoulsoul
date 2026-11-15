@@ -16,13 +16,12 @@ export function notifyDesktop(title: string, body: string): void {
   showAlertWindow(title, body);
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'granted') return;
-  // 사용자가 직접 닫을 때까지 유지. 같은 tag 는 재알림(renotify)으로 다시 띄운다.
+  // 사용자가 직접 닫을 때까지 유지. tag 를 매번 달리해 여러 개가 동시에 쌓인다.
   const opts = {
     body,
     silent: false,
     requireInteraction: true,
-    tag: title,
-    renotify: true,
+    tag: `${title}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
   } as NotificationOptions;
   const fallback = () => {
     try {

@@ -1,0 +1,384 @@
+diff --git a/frontend/src/features/ai-analysis/analysis.css b/frontend/src/features/ai-analysis/analysis.css
+index f711fef..1e09878 100644
+--- a/frontend/src/features/ai-analysis/analysis.css
++++ b/frontend/src/features/ai-analysis/analysis.css
+@@ -35,26 +35,6 @@
+   margin-top: 16px;
+ }
+ 
+-.coach-toast {
+-  position: fixed;
+-  top: 50%;
+-  left: 50%;
+-  z-index: 1000;
+-  width: min(320px, calc(100vw - 32px));
+-  padding: 16px 20px;
+-  transform: translate(-50%, -50%);
+-  background: var(--surface);
+-  border: 2px solid var(--accent);
+-  border-radius: var(--radius);
+-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+-  text-align: center;
+-  font-weight: 600;
+-}
+-
+-.coach-toast p {
+-  margin: 0 0 8px;
+-}
+-
+ .analysis-screen {
+   max-width: 640px;
+   margin-top: 16px;
+diff --git a/frontend/src/features/ai-analysis/components/PostureToast.tsx b/frontend/src/features/ai-analysis/components/PostureToast.tsx
+deleted file mode 100644
+index 3243612..0000000
+--- a/frontend/src/features/ai-analysis/components/PostureToast.tsx
++++ /dev/null
+@@ -1,16 +0,0 @@
+-interface Props {
+-  message: string | null;
+-  onClose: () => void;
+-}
+-
+-export function PostureToast({ message, onClose }: Props) {
+-  if (!message) return null;
+-  return (
+-    <div className="coach-toast" role="alert">
+-      <p>{message}</p>
+-      <button type="button" className="btn btn-ghost" onClick={onClose}>
+-        확인
+-      </button>
+-    </div>
+-  );
+-}
+diff --git a/frontend/src/features/ai-analysis/hooks/useBreak.ts b/frontend/src/features/ai-analysis/hooks/useBreak.ts
+index 407aac7..605077a 100644
+--- a/frontend/src/features/ai-analysis/hooks/useBreak.ts
++++ b/frontend/src/features/ai-analysis/hooks/useBreak.ts
+@@ -3,23 +3,40 @@ import { notifyDesktop } from '../lib/notify';
+ 
+ export const BREAK_MINUTES = [3, 5, 10] as const;
+ const BREAK_DONE = '휴식 끝. 다시 공부하세요.';
++// 마지막 휴식 종료 후 이 시간 안에 또 쉬면 꼽을 준다
++const REST_COOLDOWN_MS = 30 * 60_000;
++const TOO_SOON = [
++  '공부시간보다 휴식시간이 더 긴데요??',
++  '방금 쉬셨는데요. 엉덩이에 접착제 바르시죠.',
++  '휴식 중독이십니까? 아직 30분도 안 지났습니다.',
++];
+ 
+ export function useBreak() {
+   const [totalMs, setTotalMs] = useState(0);
+   const [remainingMs, setRemainingMs] = useState(0);
+-  const [toast, setToast] = useState<string | null>(null);
+   const endAt = useRef(0);
++  const lastEnd = useRef(0);
++  const running = useRef(false);
+ 
+   const start = useCallback((minutes: number) => {
+     const ms = minutes * 60_000;
+-    endAt.current = Date.now() + ms;
+-    setToast(null);
++    const now = Date.now();
++    if (lastEnd.current && now - lastEnd.current < REST_COOLDOWN_MS) {
++      const msg = TOO_SOON[Math.floor(Math.random() * TOO_SOON.length)];
++      notifyDesktop('휴식 과다', msg);
++    }
++    running.current = true;
++    endAt.current = now + ms;
+     setTotalMs(ms);
+     setRemainingMs(ms);
+   }, []);
+ 
+   // 즉시 종료 (알림 없음)
+   const end = useCallback(() => {
++    if (running.current) {
++      running.current = false;
++      lastEnd.current = Date.now();
++    }
+     setTotalMs(0);
+     setRemainingMs(0);
+   }, []);
+@@ -29,9 +46,10 @@ export function useBreak() {
+     const id = setInterval(() => {
+       const left = endAt.current - Date.now();
+       if (left <= 0) {
++        running.current = false;
++        lastEnd.current = Date.now();
+         setTotalMs(0);
+         setRemainingMs(0);
+-        setToast(BREAK_DONE);
+         notifyDesktop('휴식 종료', BREAK_DONE);
+         return;
+       }
+@@ -40,15 +58,11 @@ export function useBreak() {
+     return () => clearInterval(id);
+   }, [totalMs]);
+ 
+-  const dismiss = useCallback(() => setToast(null), []);
+-
+   return {
+     active: totalMs > 0,
+     totalMs,
+     remainingMs,
+-    toast,
+     start,
+     end,
+-    dismiss,
+   };
+ }
+diff --git a/frontend/src/features/ai-analysis/hooks/useQuitGuard.ts b/frontend/src/features/ai-analysis/hooks/useQuitGuard.ts
+index e4494c4..025b0a0 100644
+--- a/frontend/src/features/ai-analysis/hooks/useQuitGuard.ts
++++ b/frontend/src/features/ai-analysis/hooks/useQuitGuard.ts
+@@ -11,7 +11,6 @@ export type QuitPhase = 'idle' | 'counting' | 'ready';
+ export function useQuitGuard() {
+   const [phase, setPhase] = useState<QuitPhase>('idle');
+   const [remainingMs, setRemainingMs] = useState(QUIT_TOTAL_MS);
+-  const [toast, setToast] = useState<string | null>(null);
+   const endAt = useRef(0);
+   const nextAlarm = useRef(0);
+ 
+@@ -22,13 +21,11 @@ export function useQuitGuard() {
+     nextAlarm.current = now + INTERVALS_MS[0];
+     setRemainingMs(QUIT_TOTAL_MS);
+     setPhase('counting');
+-    setToast(QUIT_PROMPT);
+     notifyDesktop('종료 보류', QUIT_PROMPT);
+   }, [phase]);
+ 
+   const reset = useCallback(() => {
+     setPhase('idle');
+-    setToast(null);
+   }, []);
+ 
+   useEffect(() => {
+@@ -39,7 +36,6 @@ export function useQuitGuard() {
+       if (left <= 0) {
+         setRemainingMs(0);
+         setPhase('ready');
+-        setToast(QUIT_DONE);
+         notifyDesktop('종료 가능', QUIT_DONE);
+         return;
+       }
+@@ -50,7 +46,6 @@ export function useQuitGuard() {
+           Math.floor((1 - left / QUIT_TOTAL_MS) * INTERVALS_MS.length),
+         );
+         const msg = pickQuitMessage(level);
+-        setToast(msg);
+         notifyDesktop('종료 보류', msg);
+         nextAlarm.current = now + INTERVALS_MS[level];
+       }
+@@ -58,7 +53,5 @@ export function useQuitGuard() {
+     return () => clearInterval(id);
+   }, [phase]);
+ 
+-  const dismiss = useCallback(() => setToast(null), []);
+-
+-  return { phase, remainingMs, toast, request, reset, dismiss };
++  return { phase, remainingMs, request, reset };
+ }
+diff --git a/frontend/src/features/ai-analysis/lib/notify.ts b/frontend/src/features/ai-analysis/lib/notify.ts
+index 339e491..a569c0a 100644
+--- a/frontend/src/features/ai-analysis/lib/notify.ts
++++ b/frontend/src/features/ai-analysis/lib/notify.ts
+@@ -16,13 +16,12 @@ export function notifyDesktop(title: string, body: string): void {
+   showAlertWindow(title, body);
+   if (typeof Notification === 'undefined') return;
+   if (Notification.permission !== 'granted') return;
+-  // 사용자가 직접 닫을 때까지 유지. 같은 tag 는 재알림(renotify)으로 다시 띄운다.
++  // 사용자가 직접 닫을 때까지 유지. tag 를 매번 달리해 여러 개가 동시에 쌓인다.
+   const opts = {
+     body,
+     silent: false,
+     requireInteraction: true,
+-    tag: title,
+-    renotify: true,
++    tag: `${title}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+   } as NotificationOptions;
+   const fallback = () => {
+     try {
+diff --git a/frontend/src/features/ai-analysis/lib/pipAlert.ts b/frontend/src/features/ai-analysis/lib/pipAlert.ts
+index 1b0d4b4..0defceb 100644
+--- a/frontend/src/features/ai-analysis/lib/pipAlert.ts
++++ b/frontend/src/features/ai-analysis/lib/pipAlert.ts
+@@ -1,17 +1,11 @@
+-// 알림이 뜰 때 창을 연다. 확인을 누르면 창이 닫힌다.
+-// 1순위 Document PiP(항상 위, Chrome/Edge 116+), 2순위 팝업 창(사이트 팝업 허용 필요).
+-interface DocPiP {
+-  requestWindow(opts?: { width?: number; height?: number }): Promise<Window>;
+-}
+-
++// 알림마다 새 팝업 창을 연다. 여러 개가 동시에 뜬다. 확인을 누르면 창이 닫힌다.
++// 사이트 팝업 허용 필요.
+ const W = 360;
+ const H = 150;
++const GAP = 10;
+ 
+-let win: Window | null = null;
+-let opening = false;
+-let pending: { title: string; body: string } | null = null;
+-
+-const alive = () => !!win && !win.closed;
++const wins = new Set<Window>();
++let seq = 0;
+ 
+ function paint(w: Window, title: string, body: string, hot: boolean): void {
+   const d = w.document;
+@@ -36,60 +30,26 @@ function paint(w: Window, title: string, body: string, hot: boolean): void {
+   d.body.append(box);
+ }
+ 
+-async function openWindow(): Promise<Window | null> {
+-  const dpip = (window as unknown as { documentPictureInPicture?: DocPiP })
+-    .documentPictureInPicture;
+-  if (dpip) {
+-    try {
+-      return await dpip.requestWindow({ width: W, height: H });
+-    } catch {
+-      /* 제스처 없음 등: 팝업으로 */
+-    }
+-  }
+-  const left = Math.max(0, window.screen.availWidth - W - 20);
+-  const top = Math.max(0, window.screen.availHeight - H - 60);
+-  return window.open(
++export function showAlertWindow(title: string, body: string): void {
++  for (const w of wins) if (w.closed) wins.delete(w);
++  const slot = wins.size;
++  const left = Math.max(0, window.screen.availWidth - W - 20 - slot * 24);
++  const top = Math.max(
++    0,
++    window.screen.availHeight - (H + GAP + 40) * (slot + 1),
++  );
++  const w = window.open(
+     '',
+-    'study-alert',
++    `study-alert-${seq++}`,
+     `popup=yes,width=${W},height=${H},left=${left},top=${top}`,
+   );
+-}
+-
+-function ensureWindow(): void {
+-  if (alive() || opening) return;
+-  opening = true;
+-  void openWindow()
+-    .then((w) => {
+-      if (!w) return;
+-      win = w;
+-      w.addEventListener('pagehide', () => {
+-        if (win === w) win = null;
+-      });
+-      if (pending) paint(w, pending.title, pending.body, true);
+-    })
+-    .catch(() => {})
+-    .finally(() => {
+-      opening = false;
+-      pending = null;
+-    });
+-}
+-
+-export function showAlertWindow(title: string, body: string): void {
+-  if (alive() && win) {
+-    paint(win, title, body, true);
+-    try {
+-      win.focus();
+-    } catch {
+-      /* 무시 */
+-    }
+-    return;
+-  }
+-  pending = { title, body };
+-  ensureWindow();
++  if (!w) return;
++  wins.add(w);
++  w.addEventListener('pagehide', () => wins.delete(w));
++  paint(w, title, body, true);
+ }
+ 
+ export function closeAlertWindow(): void {
+-  pending = null;
+-  if (alive()) win?.close();
+-  win = null;
++  for (const w of wins) w.close();
++  wins.clear();
+ }
+diff --git a/frontend/src/features/ai-analysis/pages/StudyView.tsx b/frontend/src/features/ai-analysis/pages/StudyView.tsx
+index ad54235..b037d19 100644
+--- a/frontend/src/features/ai-analysis/pages/StudyView.tsx
++++ b/frontend/src/features/ai-analysis/pages/StudyView.tsx
+@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
+ import { ErrorMessage } from '../../../components/ErrorMessage';
+ import { BreakButtons, BreakGauge } from '../components/BreakGauge';
+ import { OverlayCanvas } from '../components/OverlayCanvas';
+-import { PostureToast } from '../components/PostureToast';
+ import { QuitBanner } from '../components/QuitBanner';
+ import { SleepGauge } from '../components/SleepGauge';
+ import { useAnalysis } from '../hooks/useAnalysis';
+@@ -65,7 +64,6 @@ export function StudyPage() {
+   const [view, setView] = useState<'user' | 'analysis'>('user');
+   const [deviceId, setDeviceId] = useState(loadDeviceId);
+   const [calibration, setCalibration] = useState<string | null>(null);
+-  const [preview, setPreview] = useState<string | null>(null);
+   const [elapsed, setElapsed] = useState(0);
+   const [roasts, setRoasts] = useState(0);
+   const [recent, setRecent] = useState('');
+@@ -79,9 +77,6 @@ export function StudyPage() {
+   const running = status === 'running';
+   const quit = useQuitGuard();
+   const busy = running || screen.active;
+-  // 알림은 사용자가 확인을 눌러야 사라진다
+-  const siteToast =
+-    quit.toast ?? rest.toast ?? coach.toast ?? sleep.toast ?? screen.toast;
+ 
+   // 휴대폰은 한 번 감지되면 PHONE_HOLD_MS 동안 사용 중으로 유지
+   const phoneRaw = Math.round(
+@@ -136,17 +131,20 @@ export function StudyPage() {
+     if (!coach.toast) return;
+     setRoasts((n) => n + 1);
+     setRecent(coach.toast);
+-  }, [coach.toast]);
++    coach.dismiss();
++  }, [coach.toast, coach.dismiss]);
+   useEffect(() => {
+     if (!sleep.toast) return;
+     setRoasts((n) => n + 1);
+     setRecent(sleep.toast);
+-  }, [sleep.toast]);
++    sleep.dismiss();
++  }, [sleep.toast, sleep.dismiss]);
+   useEffect(() => {
+     if (!screen.toast) return;
+     setRoasts((n) => n + 1);
+     setRecent(screen.toast);
+-  }, [screen.toast]);
++    screen.dismiss();
++  }, [screen.toast, screen.dismiss]);
+ 
+   // 공부 중 탭 닫기도 한 번 막는다
+   useEffect(() => {
+@@ -200,17 +198,6 @@ export function StudyPage() {
+         onCancel={quit.reset}
+         onQuit={confirmQuit}
+       />
+-      <PostureToast
+-        message={preview ?? siteToast}
+-        onClose={() => {
+-          setPreview(null);
+-          coach.dismiss();
+-          sleep.dismiss();
+-          screen.dismiss();
+-          quit.dismiss();
+-          rest.dismiss();
+-        }}
+-      />
+ 
+       <div className={view === 'analysis' ? 'analysis-layout' : undefined}>
+         {/* 영상은 항상 마운트. 사용자 화면에서는 화면 밖으로 치운다 */}
+@@ -363,7 +350,6 @@ export function StudyPage() {
+                       className="btn"
+                       onClick={() => {
+                         const msg = h.get();
+-                        setPreview(msg);
+                         showAlertWindow(h.label, msg);
+                       }}
+                     >
