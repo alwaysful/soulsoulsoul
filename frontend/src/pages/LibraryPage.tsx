@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import './library.css';
 import './library-panels.css';
-import { LibraryPanel } from './LibraryPanels';
+import { LibraryPanel } from './LibraryReserve';
 
 const TABS = ['통합검색', '소장자료', '전자자료', '학위논문'] as const;
 

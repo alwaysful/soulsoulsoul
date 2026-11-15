@@ -1,0 +1,24 @@
+.lr-bar {
+  margin: 0 0 12px;
+}
+
+.lr-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.lr-check input {
+  width: auto;
+}
+
+.lr-h {
+  margin: 20px 0 8px;
+  font-size: 1rem;
+}
+
+.lr-mine li > div {
+  display: flex;
+  flex-direction: column;
+}
