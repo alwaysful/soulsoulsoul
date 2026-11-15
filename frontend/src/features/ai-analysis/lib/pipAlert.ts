@@ -1,18 +1,11 @@
-// 알림마다 새 팝업 창을 연다. 화면 가운데에 뜨고, 이미 있으면 1mm(≈4px)씩 대각선으로 밀려 겹친다.
+// 알림마다 새 팝업 창을 연다. 화면 가운데에 뜨고, 이미 있으면 4mm(≈16px)씩 대각선으로 밀려 겹친다.
 // 확인을 누르면 창이 닫힌다. 사이트 팝업 허용 필요.
 const W = 432; // 360 * 1.2
 const H = 180; // 150 * 1.2
-const STEP = 4; // 1mm ≈ 3.78px
+const STEP = 16; // 4mm ≈ 15px
 
-const wins = new Map<Window, number>(); // 창 -> 겹침 순번
+const wins = new Set<Window>();
 let seq = 0;
-
-function freeSlot(): number {
-  const used = new Set(wins.values());
-  let i = 0;
-  while (used.has(i)) i++;
-  return i;
-}
 
 function paint(w: Window, title: string, body: string, hot: boolean): void {
   const d = w.document;
@@ -38,8 +31,8 @@ function paint(w: Window, title: string, body: string, hot: boolean): void {
 }
 
 export function showAlertWindow(title: string, body: string): void {
-  for (const w of wins.keys()) if (w.closed) wins.delete(w);
-  const slot = freeSlot();
+  for (const w of wins) if (w.closed) wins.delete(w);
+  const slot = wins.size;
   const left = Math.max(
     0,
     Math.round((window.screen.availWidth - W) / 2) + slot * STEP,
@@ -54,12 +47,12 @@ export function showAlertWindow(title: string, body: string): void {
     `popup=yes,width=${W},height=${H},left=${left},top=${top}`,
   );
   if (!w) return;
-  wins.set(w, slot);
+  wins.add(w);
   w.addEventListener('pagehide', () => wins.delete(w));
   paint(w, title, body, true);
 }
 
 export function closeAlertWindow(): void {
-  for (const w of wins.keys()) w.close();
+  for (const w of wins) w.close();
   wins.clear();
 }
