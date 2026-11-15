@@ -1,0 +1,97 @@
+diff -ruN a/frontend/src/features/ai-analysis/lib/notify.ts b/frontend/src/features/ai-analysis/lib/notify.ts
+--- a/frontend/src/features/ai-analysis/lib/notify.ts	2026-11-15 02:32:24.730857790 +0000
++++ b/frontend/src/features/ai-analysis/lib/notify.ts	2026-11-15 02:32:24.766908435 +0000
+@@ -1,5 +1,9 @@
+-// 노트북(브라우저) 알림. 소리/진동 없이 조용히 띄운다.
++import { openAlertWindow, showAlertWindow } from './pipAlert';
++
++// 노트북(브라우저) 알림. 항상 위 창(PiP) + OS 알림.
++// 클릭 핸들러에서 호출되므로 여기서 PiP 창을 연다 (사용자 제스처 필요).
+ export async function requestDesktopPermission(): Promise<void> {
++  void openAlertWindow();
+   if (typeof Notification === 'undefined') return;
+   if (Notification.permission !== 'default') return;
+   try {
+@@ -10,6 +14,8 @@
+ }
+ 
+ export function notifyDesktop(title: string, body: string): void {
++  // 다른 프로그램 사용 중에도 최상단에 뜨는 창
++  showAlertWindow(title, body);
+   if (typeof Notification === 'undefined') return;
+   if (Notification.permission !== 'granted') return;
+   // 사용자가 직접 닫을 때까지 유지. 같은 tag 는 재알림(renotify)으로 다시 띄운다.
+diff -ruN a/frontend/src/features/ai-analysis/lib/pipAlert.ts b/frontend/src/features/ai-analysis/lib/pipAlert.ts
+--- a/frontend/src/features/ai-analysis/lib/pipAlert.ts	1970-01-01 00:00:00.000000000 +0000
++++ b/frontend/src/features/ai-analysis/lib/pipAlert.ts	2026-11-15 02:32:24.769547553 +0000
+@@ -0,0 +1,70 @@
++// Document Picture-in-Picture: 다른 창 위에 항상 떠 있는 알림 창 (Chrome/Edge 116+)
++interface DocPiP {
++  requestWindow(opts?: { width?: number; height?: number }): Promise<Window>;
++}
++
++const IDLE_TITLE = '감시 중';
++const IDLE_BODY = '딴짓하면 여기 뜹니다.';
++
++let win: Window | null = null;
++let titleEl: HTMLElement | null = null;
++let bodyEl: HTMLElement | null = null;
++let box: HTMLElement | null = null;
++let opening = false;
++
++const api = (): DocPiP | null =>
++  (window as unknown as { documentPictureInPicture?: DocPiP })
++    .documentPictureInPicture ?? null;
++
++const alive = () => !!win && !win.closed;
++
++function render(title: string, body: string, hot: boolean): void {
++  if (!alive() || !titleEl || !bodyEl || !box) return;
++  titleEl.textContent = title;
++  bodyEl.textContent = body;
++  box.style.background = hot ? '#b42318' : '#18222b';
++}
++
++export async function openAlertWindow(): Promise<void> {
++  const dpip = api();
++  if (!dpip || alive() || opening) return;
++  opening = true;
++  try {
++    const w = await dpip.requestWindow({ width: 360, height: 150 });
++    const d = w.document;
++    d.body.style.cssText =
++      'margin:0;font-family:system-ui,"Noto Sans KR",sans-serif;';
++    box = d.createElement('div');
++    box.style.cssText =
++      'box-sizing:border-box;height:100vh;padding:14px 16px;color:#fff;display:flex;flex-direction:column;gap:6px;';
++    titleEl = d.createElement('strong');
++    titleEl.style.fontSize = '14px';
++    bodyEl = d.createElement('div');
++    bodyEl.style.cssText = 'font-size:16px;font-weight:600;flex:1;';
++    const btn = d.createElement('button');
++    btn.textContent = '확인';
++    btn.style.cssText =
++      'align-self:flex-end;padding:4px 14px;border:0;border-radius:6px;cursor:pointer;';
++    btn.onclick = () => render(IDLE_TITLE, IDLE_BODY, false);
++    box.append(titleEl, bodyEl, btn);
++    d.body.append(box);
++    w.addEventListener('pagehide', () => {
++      win = null;
++    });
++    win = w;
++    render(IDLE_TITLE, IDLE_BODY, false);
++  } catch {
++    /* 미지원/거부: OS 알림만 사용 */
++  } finally {
++    opening = false;
++  }
++}
++
++export function showAlertWindow(title: string, body: string): void {
++  render(title, body, true);
++}
++
++export function closeAlertWindow(): void {
++  if (alive()) win?.close();
++  win = null;
++}
