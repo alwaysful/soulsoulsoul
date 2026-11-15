@@ -1,5 +1,4 @@
-// 알림창은 사용자 클릭(제스처) 때만 열 수 있다.
-// 클릭 시 미리 열어 두고(openAlertWindow), 이후 모든 알림은 이 창을 재사용한다.
+// 알림이 뜰 때 창을 연다. 확인을 누르면 창이 닫힌다.
 // 1순위 Document PiP(항상 위, Chrome/Edge 116+), 2순위 팝업 창(사이트 팝업 허용 필요).
 interface DocPiP {
   requestWindow(opts?: { width?: number; height?: number }): Promise<Window>;
@@ -7,8 +6,6 @@ interface DocPiP {
 
 const W = 360;
 const H = 150;
-const IDLE_TITLE = '감시 중';
-const IDLE_BODY = '딴짓하면 여기 뜹니다.';
 
 let win: Window | null = null;
 let opening = false;
@@ -34,8 +31,7 @@ function paint(w: Window, title: string, body: string, hot: boolean): void {
   btn.textContent = '확인';
   btn.style.cssText =
     'align-self:flex-end;padding:4px 14px;border:0;border-radius:6px;cursor:pointer;';
-  // 닫지 않고 대기 상태로 되돌린다 (창 유지 → 다음 알림도 표시 가능)
-  btn.onclick = () => paint(w, IDLE_TITLE, IDLE_BODY, false);
+  btn.onclick = () => w.close();
   box.append(t, b, btn);
   d.body.append(box);
 }
@@ -70,18 +66,12 @@ function ensureWindow(): void {
         if (win === w) win = null;
       });
       if (pending) paint(w, pending.title, pending.body, true);
-      else paint(w, IDLE_TITLE, IDLE_BODY, false);
     })
     .catch(() => {})
     .finally(() => {
       opening = false;
       pending = null;
     });
-}
-
-// 반드시 클릭 핸들러 안에서 동기 호출
-export function openAlertWindow(): void {
-  ensureWindow();
 }
 
 export function showAlertWindow(title: string, body: string): void {

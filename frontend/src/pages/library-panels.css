@@ -1,0 +1,132 @@
+.lp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lp-seats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 6px;
+}
+
+.lp-seat,
+.lp-cell {
+  padding: 6px 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.lp-seat:hover:not(:disabled),
+.lp-cell:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.lp-taken,
+.lp-cell:disabled {
+  background: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.lp-mine {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.lp-scroll {
+  overflow-x: auto;
+}
+
+.lp-table {
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.lp-table th {
+  padding: 0 6px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.lp-cell {
+  width: 100%;
+  min-width: 52px;
+}
+
+.lp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.lp-list li > div:first-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-list .row {
+  margin-top: 0;
+}
+
+.lp-late {
+  color: var(--danger);
+}
+
+.lp-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lp-form input {
+  flex: 1 1 200px;
+  width: auto;
+}
+
+.lp-form select {
+  width: auto;
+}
+
+.lp-faq details {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.lp-faq summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.lp-faq p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.lp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

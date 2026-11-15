@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import './library.css';
+import './library-panels.css';
+import { LibraryPanel } from './LibraryPanels';
 
 const TABS = ['통합검색', '소장자료', '전자자료', '학위논문'] as const;
 
@@ -48,6 +50,7 @@ export function LibraryPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>(TABS[0]);
   const [q, setQ] = useState('');
   const [done, setDone] = useState('');
+  const [panel, setPanel] = useState<string | null>(null);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -105,7 +108,14 @@ export function LibraryPage() {
       <ul className="library-links">
         {QUICK.map((l) => (
           <li key={l.title}>
-            <a href="#" className="library-link" onClick={(e) => e.preventDefault()}>
+            <a
+              href="#"
+              className="library-link"
+              onClick={(e) => {
+                e.preventDefault();
+                setPanel(l.title === panel ? null : l.title);
+              }}
+            >
               <span className="lib-icon" aria-hidden>
                 {l.icon}
               </span>
@@ -115,6 +125,7 @@ export function LibraryPage() {
           </li>
         ))}
       </ul>
+      {panel && <LibraryPanel kind={panel} onClose={() => setPanel(null)} />}
 
       <div className="lib-cols">
         <div className="lib-card">

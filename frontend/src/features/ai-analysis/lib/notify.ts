@@ -1,8 +1,7 @@
-import { openAlertWindow, showAlertWindow } from './pipAlert';
+import { showAlertWindow } from './pipAlert';
 
-// 노트북(브라우저) 알림. 클릭 시 알림창을 미리 열고 재사용 + OS 알림.
+// 노트북(브라우저) 알림. 알림 창 + OS 알림.
 export async function requestDesktopPermission(): Promise<void> {
-  openAlertWindow();
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'default') return;
   try {
