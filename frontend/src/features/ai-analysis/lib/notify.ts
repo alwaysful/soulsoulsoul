@@ -1,9 +1,7 @@
-import { openAlertWindow, showAlertWindow } from './pipAlert';
+import { showAlertWindow } from './pipAlert';
 
-// 노트북(브라우저) 알림. 항상 위 창(PiP) + OS 알림.
-// 클릭 핸들러에서 호출되므로 여기서 PiP 창을 연다 (사용자 제스처 필요).
+// 노트북(브라우저) 알림. 알림마다 새 창 + OS 알림.
 export async function requestDesktopPermission(): Promise<void> {
-  void openAlertWindow();
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'default') return;
   try {
