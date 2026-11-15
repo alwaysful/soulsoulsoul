@@ -1,0 +1,246 @@
+.lab h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lab-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.lab-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lab-list > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.lab-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lab-head > span:nth-child(2) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.lab-caret {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.lab-small {
+  font-size: 0.85rem;
+}
+
+.lab-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 4px 16px;
+}
+
+.lab-body input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.lab-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.lab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lab-row input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.lab-body > .btn {
+  align-self: flex-start;
+}
+
+.lab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lab-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.lab-chip-on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.lab-bracket h3 {
+  margin: 8px 0 4px;
+  font-size: 0.95rem;
+}
+
+.lab-bracket ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.lab-bracket li {
+  margin: 2px 0;
+}
+
+.lab-win {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.lab-lose {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.lab-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius);
+  animation: lab-pop 0.3s ease-out;
+}
+
+.lab-big {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.lab-grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.lab-drop-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.lab-drop {
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 200px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.lab-drop:hover {
+  border-color: var(--accent);
+}
+
+.lab-drop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lab-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.lab-tower-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.lab-tower-wrap .lab-result {
+  flex: 1;
+  min-width: 220px;
+}
+
+.lab-tower {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  width: 160px;
+  padding-bottom: 4px;
+  border-bottom: 3px solid var(--muted);
+  transform-origin: bottom center;
+}
+
+.lab-tbook {
+  height: 12px;
+  margin-top: 1px;
+  border-radius: 2px;
+}
+
+.lab-tower.lv1 { animation: lab-wobble 3s ease-in-out infinite; }
+.lab-tower.lv2 { animation: lab-wobble 1.8s ease-in-out infinite; }
+.lab-tower.lv3 { animation: lab-wobble 0.9s ease-in-out infinite; }
+.lab-tower.lv4 { animation: lab-wobble 0.4s ease-in-out infinite; }
+
+@keyframes lab-wobble {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+@keyframes lab-pop {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-tower,
+  .lab-result {
+    animation: none !important;
+  }
+}

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import './library.css';
 import './library-panels.css';
 import { LibraryPanel } from './LibraryReserve';
+import { LibraryLab } from './LibraryLab';
 
 const TABS = ['통합검색', '소장자료', '전자자료', '학위논문'] as const;
 
@@ -192,6 +193,8 @@ export function LibraryPage() {
           ))}
         </ul>
       </div>
+
+      <LibraryLab />
 
       <footer className="lib-footer muted">
         술술 도서관 · 모의 사이트 (시연용) · 문의 000-0000-0000
