@@ -220,7 +220,7 @@ export function StudyPage() {
               <>
                 <div className="study-time">{hms(elapsed)}</div>
                 <p className="study-sub">
-                  오늘 꼽 먹은 횟수 {roasts}회{recent && ` · 최근: ${recent}`}
+                  잔소리 들은 횟수 {roasts}회{recent && ` · 최근: ${recent}`}
                 </p>
                 {rest.active ? (
                   <BreakGauge remainingMs={rest.remainingMs} totalMs={rest.totalMs} />
