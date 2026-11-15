@@ -20,9 +20,6 @@ export function Layout() {
           <nav className="topbar-nav">
             {user ? (
               <>
-                <Link to="/study" className="btn btn-ghost">
-                  공부
-                </Link>
                 <span className="muted">{user.email}</span>
                 <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
                   로그아웃

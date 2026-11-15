@@ -18,9 +18,9 @@ cd frontend && npm install && npm run dev
 - `efficientdet_lite0.tflite` (COCO, `cell phone` 클래스)
 
 웹캠 영상은 브라우저 안에서만 처리한다.
-화면 감시: 캡처 이미지는 백엔드를 거쳐 로컬 Ollama(Qwen3-VL 4B)로 전달된다. 외부로 나가지 않는다.
+화면 감시: 캡처 이미지는 백엔드를 거쳐 로컬 Ollama(gemma4:12b)로 전달된다. 외부로 나가지 않는다.
 
 ## 화면 감시 (Ollama)
 1. https://ollama.com 에서 Windows 설치
-2. `ollama pull qwen3-vl:4b`
-3. 루트 `.env` 에 `OLLAMA_URL`, `OLLAMA_MODEL` 설정 (`.env.example` 참고)
+2. `ollama pull gemma4:12b`
+3. 루트 `.env` 에 `OLLAMA_URL` 설정 (`.env.example` 참고)
