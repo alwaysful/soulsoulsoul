@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ErrorMessage } from '../../../components/ErrorMessage';
 import { OverlayCanvas } from '../components/OverlayCanvas';
 import { PostureToast } from '../components/PostureToast';
@@ -259,6 +260,15 @@ export function StudyPage() {
             <ErrorMessage message={sleep.error} />
             <ErrorMessage message={screen.error} />
             <div className="study-links">
+              {busy ? (
+                <button type="button" className="study-link" disabled>
+                  돌아가기
+                </button>
+              ) : (
+                <Link to="/" className="study-link">
+                  돌아가기
+                </Link>
+              )}
               <button
                 type="button"
                 className="study-link"

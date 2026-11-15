@@ -1,9 +1,10 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Layout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const onStudy = useLocation().pathname === '/study';
 
   const handleSignOut = () => {
     signOut();
@@ -18,9 +19,11 @@ export function Layout() {
             T-GPT
           </Link>
           <nav className="topbar-nav">
-            <Link to="/study" className="btn btn-primary">
-              공부
-            </Link>
+            {!onStudy && (
+              <Link to="/study" className="btn btn-primary">
+                공부
+              </Link>
+            )}
             {user ? (
               <>
                 <span className="muted">{user.email}</span>

@@ -12,14 +12,24 @@ export async function requestDesktopPermission(): Promise<void> {
 export function notifyDesktop(title: string, body: string): void {
   if (typeof Notification === 'undefined') return;
   if (Notification.permission !== 'granted') return;
-  try {
-    // 사용자가 직접 닫을 때까지 유지
-    new Notification(title, {
-      body,
-      silent: true,
-      requireInteraction: true,
-    } as NotificationOptions);
-  } catch {
-    /* 무시 */
-  }
+  // 사용자가 직접 닫을 때까지 유지. 같은 tag 는 재알림(renotify)으로 다시 띄운다.
+  const opts = {
+    body,
+    silent: false,
+    requireInteraction: true,
+    tag: title,
+    renotify: true,
+  } as NotificationOptions;
+  const fallback = () => {
+    try {
+      const n = new Notification(title, opts);
+      n.onclick = () => window.focus();
+    } catch {
+      /* 무시 */
+    }
+  };
+  if (!('serviceWorker' in navigator)) return fallback();
+  navigator.serviceWorker.ready
+    .then((reg) => reg.showNotification(title, opts))
+    .catch(fallback);
 }
